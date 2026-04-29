@@ -1,0 +1,1331 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Supernova · Gravitational Waves · The Einstein Telescope</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #000;
+      overflow: hidden;
+      font-family: 'Georgia', serif;
+    }
+
+    canvas {
+      display: block;
+    }
+
+    #subtitle {
+      position: fixed;
+      bottom: 90px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 75%;
+      text-align: center;
+      color: #fff;
+      font-size: 17px;
+      line-height: 1.65;
+      text-shadow: 0 2px 12px rgba(0, 0, 0, .95);
+      pointer-events: none;
+      transition: opacity .4s;
+      max-height: 100px;
+      overflow: hidden;
+    }
+
+    #scene-label {
+      position: fixed;
+      top: 28px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: rgba(180, 210, 255, .7);
+      font-size: 12px;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      pointer-events: none;
+      transition: opacity .5s;
+    }
+
+    #controls {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: rgba(0, 0, 0, .55);
+      padding: 10px 20px;
+      border-radius: 30px;
+      border: 1px solid rgba(255, 255, 255, .15);
+      backdrop-filter: blur(6px);
+    }
+
+    #play-btn {
+      background: none;
+      border: 1px solid rgba(255, 255, 255, .45);
+      color: #fff;
+      padding: 5px 16px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 12px;
+      letter-spacing: 1px;
+      transition: background .2s;
+    }
+
+    #play-btn:hover {
+      background: rgba(255, 255, 255, .12);
+    }
+
+    #timeline {
+      width: 320px;
+      height: 5px;
+      background: rgba(255, 255, 255, .25);
+      border-radius: 3px;
+      cursor: pointer;
+      position: relative;
+    }
+
+    #timeline-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #ff6b35, #f7c948, #9b59b6);
+      border-radius: 3px;
+      width: 0%;
+      pointer-events: none;
+    }
+
+    #time-disp {
+      color: rgba(255, 255, 255, .6);
+      font-size: 12px;
+      min-width: 70px;
+    }
+
+    #flash {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background: #fff;
+      opacity: 0;
+      transition: opacity .05s;
+    }
+
+    #ligo-popup {
+      position: fixed;
+      top: 50%;
+      right: 50px;
+      transform: translateY(-50%);
+      background: rgba(2, 10, 35, .88);
+      border: 1px solid rgba(80, 150, 255, .5);
+      border-radius: 14px;
+      padding: 22px 24px;
+      color: #fff;
+      max-width: 270px;
+      opacity: 0;
+      transition: opacity .6s;
+      pointer-events: none;
+      backdrop-filter: blur(8px);
+    }
+
+    #ligo-popup h3 {
+      color: #6af;
+      font-size: 13px;
+      letter-spacing: 2px;
+      margin-bottom: 10px;
+    }
+
+    #ligo-popup p {
+      font-size: 12px;
+      color: rgba(255, 255, 255, .8);
+      line-height: 1.6;
+    }
+
+    #et-popup {
+      position: fixed;
+      top: 50%;
+      right: 50px;
+      transform: translateY(-50%);
+      background: rgba(2, 10, 35, .88);
+      border: 1px solid rgba(80, 255, 150, .4);
+      border-radius: 14px;
+      padding: 22px 24px;
+      color: #fff;
+      max-width: 280px;
+      opacity: 0;
+      transition: opacity .6s;
+      pointer-events: none;
+      backdrop-filter: blur(8px);
+    }
+
+    #et-popup h3 {
+      color: #4fa;
+      font-size: 13px;
+      letter-spacing: 2px;
+      margin-bottom: 10px;
+    }
+
+    #et-popup p {
+      font-size: 12px;
+      color: rgba(255, 255, 255, .8);
+      line-height: 1.6;
+    }
+
+    #fade-black {
+      position: fixed;
+      inset: 0;
+      background: #000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 1.5s;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="flash"></div>
+  <div id="fade-black"></div>
+  <div id="scene-label">SUPERNOVA</div>
+  <div id="subtitle"></div>
+
+  <div id="ligo-popup">
+    <h3>LIGO OBSERVATORY</h3>
+    <p>First detected gravitational waves in 2015.<br>
+      Arms: 4 km. Locations: Hanford WA & Livingston LA.<br>
+      Has never detected waves from a supernova.</p>
+    <img src="https://en.wikipedia.org/wiki/Special:FilePath/LIGO_Hanford_aerial_05.jpg" style="width: 100%; border-radius: 8px; margin-top: 12px; border: 1px solid rgba(255,255,255,0.2);">
+  </div>
+
+  <div id="et-popup">
+    <h3>THE EINSTEIN TELESCOPE</h3>
+    <p>Proposed 3rd-generation detector.<br>
+      Triangular arms: 10 km each.<br>
+      Built hundreds of metres underground.<br>
+      10× more sensitive than current detectors.</p>
+  </div>
+
+  <div id="controls">
+    <button id="play-btn">PAUSE</button>
+    <div id="timeline">
+      <div id="timeline-fill"></div>
+    </div>
+    <span id="time-disp">0:00 / 2:50</span>
+  </div>
+
+  <script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
+</script>
+  <script type="module">
+    import * as THREE from 'three';
+
+    /* ─── Renderer ─────────────────────────────────────────────────────────── */
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    renderer.setSize(innerWidth, innerHeight);
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    document.body.prepend(renderer.domElement);
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.01, 2000);
+    camera.position.set(0, 0, 14);
+
+    window.addEventListener('resize', () => {
+      camera.aspect = innerWidth / innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(innerWidth, innerHeight);
+    });
+
+    /* ─── Voiceover / Scene timeline ────────────────────────────────────────── */
+    const TOTAL = 170;
+
+    const subtitles = [
+      {
+        s: 0, e: 15, label: 'RED SUPERGIANT',
+        text: 'What you see is a red supergiant star — the biggest kind of star found in the abyss of space. This one is at the end of its life, and deep within its glowing haze, the titan is starving.'
+      },
+      {
+        s: 15, e: 25, label: 'STELLAR CORE',
+        text: 'Long devoid of its hydrogen supply, its core desperately fuses heavier and heavier elements to survive. By the time silicon fuses into iron, it had only days left to live. Gravity is taking over.'
+      },
+      {
+        s: 25, e: 38, label: 'CORE COLLAPSE',
+        text: 'The core — now a dense ball of iron — can no longer fuse. Gravity has finally won, crushing inward more and more until the core is forced to compensate.'
+      },
+      {
+        s: 38, e: 55, label: 'SUPERNOVA',
+        text: 'This is a supernova, one of the most violent explosions in the universe. The remnant core may become a neutron star, or if massive enough, a black hole. But the real details of this catastrophe are invisible to the naked eye.'
+      },
+      {
+        s: 55, e: 85, label: 'GRAVITATIONAL WAVES',
+        text: 'Here lies the hidden scaffolding of our universe: Spacetime. When a star this massive collapses, it tears at space itself. Like a stone dropped into a dark pond, the core\'s death sends out massive ripples — waves in the fabric of reality, stretching and squeezing everything in their path.'
+      },
+      {
+        s: 85, e: 115, label: 'WAVES ACROSS THE UNIVERSE',
+        text: 'Unlike light, which can be scattered or absorbed, gravitational waves treat the entire universe as transparent. They glide through the densest nebulae and hearts of galaxies without losing detail. They carry the internal secrets of the event that created them.'
+      },
+      {
+        s: 115, e: 130, label: 'EARTH',
+        text: 'By the time these waves reach Earth, they are unimaginably faint. Only in 2015 did LIGO first detect them — but never from a supernova.'
+      },
+      {
+        s: 130, e: 140, label: 'THE EINSTEIN TELESCOPE ',
+        text: 'The Einstein Telescope — a new third-generation observatory — could be the key to discovering this once and for all.'
+      },
+      {
+        s: 140, e: 155, label: 'THE EINSTEIN TELESCOPE',
+        text: 'This proposed European facility will be built deep underground to escape seismic noise. With 10-kilometre triangular arms and super-cooled mirrors, it will be ten times more sensitive than current detectors.'
+      },
+      {
+        s: 155, e: 170, label: 'DECODING THE UNIVERSE',
+        text: 'By decoding these faint waves, we will finally see inside the heart of exploding stars — revealing the exact physics that forge the elements of our universe.'
+      },
+    ];
+
+    /* ─── DOM refs ──────────────────────────────────────────────────────────── */
+    const elSubtitle = document.getElementById('subtitle');
+    const elLabel = document.getElementById('scene-label');
+    const elTimeline = document.getElementById('timeline');
+    const elFill = document.getElementById('timeline-fill');
+    const elTime = document.getElementById('time-disp');
+    const elPlay = document.getElementById('play-btn');
+    const elFlash = document.getElementById('flash');
+    const elFadeBlack = document.getElementById('fade-black');
+    const elLigo = document.getElementById('ligo-popup');
+    const elET = document.getElementById('et-popup');
+
+    /* ─── Timeline Markers ──────────────────────────────────────────────────── */
+    subtitles.forEach(sub => {
+      if (sub.s === 0) return; // Skip the very beginning
+      const marker = document.createElement('div');
+      marker.style.position = 'absolute';
+      marker.style.left = (sub.s / TOTAL * 100) + '%';
+      marker.style.top = '-2px';
+      marker.style.bottom = '-2px';
+      marker.style.width = '2px';
+      marker.style.background = 'rgba(255, 255, 255, 0.8)';
+      marker.style.borderRadius = '1px';
+      marker.style.zIndex = '10';
+      elTimeline.appendChild(marker);
+    });
+
+    /* ─── Helpers ───────────────────────────────────────────────────────────── */
+    const lerp = (a, b, t) => a + (b - a) * t;
+    const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+    const ease = t => t < .5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+
+    function fmt(s) {
+      const m = Math.floor(s / 60), sec = Math.floor(s % 60);
+      return `${m}:${sec.toString().padStart(2, '0')}`;
+    }
+
+    function sceneT(s, e, t) { return clamp((t - s) / (e - s), 0, 1); }
+
+    /* ─── Star field ────────────────────────────────────────────────────────── */
+    function makeStarField(count = 4000) {
+      const geo = new THREE.BufferGeometry();
+      const pos = new Float32Array(count * 3);
+      for (let i = 0; i < count; i++) {
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.acos(2 * Math.random() - 1);
+        const r = 200 + Math.random() * 600;
+        pos[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+        pos[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
+        pos[i * 3 + 2] = r * Math.cos(phi);
+      }
+      geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+      const mat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.4, sizeAttenuation: true });
+      return new THREE.Points(geo, mat);
+    }
+    const stars = makeStarField();
+    scene.add(stars);
+
+    /* ─── Scene 0: Red supergiant ───────────────────────────────────────────── */
+    const starGroup = new THREE.Group();
+    scene.add(starGroup);
+
+    // Core sphere
+    const starCore = new THREE.Mesh(
+      new THREE.SphereGeometry(3, 64, 64),
+      new THREE.MeshStandardMaterial({
+        color: 0xff4400, emissive: 0xcc2200, emissiveIntensity: 1.2,
+        roughness: 0.8, metalness: 0
+      })
+    );
+    starGroup.add(starCore);
+
+    // Glow layers
+    for (let i = 0; i < 4; i++) {
+      const r = 3.2 + i * 0.7;
+      const glow = new THREE.Mesh(
+        new THREE.SphereGeometry(r, 32, 32),
+        new THREE.MeshBasicMaterial({
+          color: new THREE.Color().setHSL(0.05 - i * 0.01, 1, 0.5),
+          transparent: true, opacity: 0.08 - i * 0.015, side: THREE.BackSide
+        })
+      );
+      starGroup.add(glow);
+    }
+
+    const starLight = new THREE.PointLight(0xff5500, 3, 60);
+    starGroup.add(starLight);
+
+    /* ─── Scene 1: Atom fusion particles ────────────────────────────────────── */
+    const atomGroup = new THREE.Group();
+    scene.add(atomGroup);
+    atomGroup.visible = false;
+
+    const atomGenerations = [
+      { name: 'He', color: 0xffdd44, size: 0.12, count: 32 },
+      { name: 'C', color: 0xaaaaaa, size: 0.18, count: 16 },
+      { name: 'Si', color: 0xffaa44, size: 0.26, count: 8 },
+      { name: 'Fe', color: 0xcc8844, size: 0.36, count: 4 },
+    ];
+
+    const atomMeshes = [];
+    for (let g = 0; g < 4; g++) {
+      const def = atomGenerations[g];
+      for (let i = 0; i < def.count; i++) {
+        const mesh = new THREE.Mesh(
+          new THREE.SphereGeometry(def.size, 16, 16),
+          new THREE.MeshStandardMaterial({ color: def.color, emissive: def.color, emissiveIntensity: 0.6 })
+        );
+        const r = 0.5 + Math.random() * 3.5;
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 0.2 + Math.random() * 0.4;
+        const yOff = (Math.random() - 0.5) * 3;
+        mesh.userData = { g, i, r, angle, speed, yOff };
+        atomGroup.add(mesh);
+        atomMeshes.push(mesh);
+      }
+    }
+    const atomLight = new THREE.PointLight(0xffaa44, 2, 20);
+    atomGroup.add(atomLight);
+
+    // Stellar interior backdrop: large inverted sphere so the camera is inside it
+    atomGroup.add(new THREE.Mesh(
+      new THREE.SphereGeometry(18, 32, 32),
+      new THREE.MeshBasicMaterial({ color: 0x220800, side: THREE.BackSide })
+    ));
+
+    // Mid-distance glow shell (gives depth / volume to the plasma)
+    atomGroup.add(new THREE.Mesh(
+      new THREE.SphereGeometry(9, 24, 24),
+      new THREE.MeshBasicMaterial({ color: 0xff3300, transparent: true, opacity: 0.08, side: THREE.BackSide })
+    ));
+    atomGroup.add(new THREE.Mesh(
+      new THREE.SphereGeometry(6, 24, 24),
+      new THREE.MeshBasicMaterial({ color: 0xff7700, transparent: true, opacity: 0.06, side: THREE.BackSide })
+    ));
+
+    // Plasma particle field — dense glowing specks filling the interior
+    const plasmaGeo = new THREE.BufferGeometry();
+    const plasmaPos = new Float32Array(1200 * 3);
+    const plasmaCol = new Float32Array(1200 * 3);
+    for (let i = 0; i < 1200; i++) {
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos(2 * Math.random() - 1);
+      const r = 0.8 + Math.random() * 7;
+      plasmaPos[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+      plasmaPos[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
+      plasmaPos[i * 3 + 2] = r * Math.cos(phi);
+      const hot = Math.random();
+      plasmaCol[i * 3] = 1;
+      plasmaCol[i * 3 + 1] = hot * 0.5;
+      plasmaCol[i * 3 + 2] = 0;
+    }
+    plasmaGeo.setAttribute('position', new THREE.BufferAttribute(plasmaPos, 3));
+    plasmaGeo.setAttribute('color', new THREE.BufferAttribute(plasmaCol, 3));
+    const plasmaPoints = new THREE.Points(plasmaGeo,
+      new THREE.PointsMaterial({ size: 0.07, vertexColors: true, sizeAttenuation: true, transparent: true, opacity: 0.75 })
+    );
+    atomGroup.add(plasmaPoints);
+
+    /* ─── Scene 2: Iron core + collapse ────────────────────────────────────── */
+    const collapseGroup = new THREE.Group();
+    scene.add(collapseGroup);
+    collapseGroup.visible = false;
+
+    // Hot stellar interior backdrop — same ambient feel as atom scene
+    collapseGroup.add(new THREE.Mesh(
+      new THREE.SphereGeometry(20, 32, 32),
+      new THREE.MeshBasicMaterial({ color: 0x1a0200, side: THREE.BackSide })
+    ));
+    collapseGroup.add(new THREE.Mesh(
+      new THREE.SphereGeometry(9, 24, 24),
+      new THREE.MeshBasicMaterial({ color: 0xcc2200, transparent: true, opacity: 0.07, side: THREE.BackSide })
+    ));
+
+    // Iron core — dense, glowing ball
+    const ironCore = new THREE.Mesh(
+      new THREE.SphereGeometry(2.5, 48, 48),
+      new THREE.MeshStandardMaterial({
+        color: 0xbb8855, emissive: 0xff4400, emissiveIntensity: 1.5, roughness: 0.85
+      })
+    );
+    collapseGroup.add(ironCore);
+
+    // Outer heat glow
+    collapseGroup.add(new THREE.Mesh(
+      new THREE.SphereGeometry(3.4, 32, 32),
+      new THREE.MeshBasicMaterial({ color: 0xff5500, transparent: true, opacity: 0.10, side: THREE.BackSide })
+    ));
+
+    // Implosion particles: start scattered, converge to centre as collapse progresses
+    const IMPL_COUNT = 700;
+    const implBasePos = new Float32Array(IMPL_COUNT * 3);
+    for (let i = 0; i < IMPL_COUNT; i++) {
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos(2 * Math.random() - 1);
+      const r = 3.5 + Math.random() * 5.5;
+      implBasePos[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+      implBasePos[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
+      implBasePos[i * 3 + 2] = r * Math.cos(phi);
+    }
+    const implGeo = new THREE.BufferGeometry();
+    implGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(IMPL_COUNT * 3), 3));
+    const implPoints = new THREE.Points(implGeo,
+      new THREE.PointsMaterial({ color: 0xff8833, size: 0.1, transparent: true, opacity: 0.9 })
+    );
+    collapseGroup.add(implPoints);
+
+    const collapseLight = new THREE.PointLight(0xff6600, 4, 35);
+    collapseGroup.add(collapseLight);
+
+    /* ─── Scene 3: Supernova explosion ──────────────────────────────────────── */
+    const explodeGroup = new THREE.Group();
+    scene.add(explodeGroup);
+    explodeGroup.visible = false;
+
+    const EXPLODE_COUNT = 3000;
+    const explodeGeo = new THREE.BufferGeometry();
+    const explodePos = new Float32Array(EXPLODE_COUNT * 3);
+    const explodeVel = new Float32Array(EXPLODE_COUNT * 3);
+    const explodeCol = new Float32Array(EXPLODE_COUNT * 3);
+
+    for (let i = 0; i < EXPLODE_COUNT; i++) {
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos(2 * Math.random() - 1);
+      const speed = 0.5 + Math.random() * 3;
+      explodeVel[i * 3] = Math.sin(phi) * Math.cos(theta) * speed;
+      explodeVel[i * 3 + 1] = Math.sin(phi) * Math.sin(theta) * speed;
+      explodeVel[i * 3 + 2] = Math.cos(phi) * speed;
+      explodePos[i * 3] = explodePos[i * 3 + 1] = explodePos[i * 3 + 2] = 0;
+      const t = Math.random();
+      explodeCol[i * 3] = 1;
+      explodeCol[i * 3 + 1] = t * 0.7;
+      explodeCol[i * 3 + 2] = t * 0.1;
+    }
+    explodeGeo.setAttribute('position', new THREE.BufferAttribute(explodePos.slice(), 3));
+    explodeGeo.setAttribute('color', new THREE.BufferAttribute(explodeCol, 3));
+    const explodeMat = new THREE.PointsMaterial({ size: 0.12, vertexColors: true, sizeAttenuation: true });
+    const explodeParticles = new THREE.Points(explodeGeo, explodeMat);
+    explodeGroup.add(explodeParticles);
+
+    const neutronStar = new THREE.Mesh(
+      new THREE.SphereGeometry(0.25, 32, 32),
+      new THREE.MeshBasicMaterial({ color: 0xaaddff })
+    );
+    explodeGroup.add(neutronStar);
+    const neutronLight = new THREE.PointLight(0xaaddff, 2, 20);
+    explodeGroup.add(neutronLight);
+
+    /* ─── Scene 4 & 5: Spacetime grid with wave shader ──────────────────────── */
+    const gridGroup = new THREE.Group();
+    scene.add(gridGroup);
+    gridGroup.visible = false;
+
+    const GRID_SEG = 100;
+    const gridGeo = new THREE.PlaneGeometry(60, 60, GRID_SEG, GRID_SEG);
+    const gridMat = new THREE.ShaderMaterial({
+      uniforms: {
+        uTime: { value: 0 },
+        uWaveR: { value: 0 },
+        uWaveAmp: { value: 1.5 },
+      },
+      vertexShader: `
+    uniform float uTime;
+    uniform float uWaveR;
+    uniform float uWaveAmp;
+    varying float vDisp;
+    void main() {
+      vec3 pos = position;
+      float dist = length(position.xz);
+      float wave = 0.0;
+      for (int i = 0; i < 4; i++) {
+        float ring = uWaveR - float(i) * 4.0;
+        float d = dist - ring;
+        wave += uWaveAmp * exp(-d*d*0.08) * sin(d*1.5 - uTime*3.0) / (float(i)+1.0);
+      }
+      pos.y += wave;
+      vDisp = wave;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+    }
+  `,
+      fragmentShader: `
+    varying float vDisp;
+    uniform float uWaveAmp;
+    void main() {
+      float i = abs(vDisp) / max(uWaveAmp, 0.001);
+      vec3 col = mix(vec3(0.05,0.1,0.35), vec3(0.3,0.7,1.0), clamp(i,0.0,1.0));
+      gl_FragColor = vec4(col, 0.85);
+    }
+  `,
+      wireframe: true, transparent: true,
+    });
+    const gridMesh = new THREE.Mesh(gridGeo, gridMat);
+    gridMesh.rotation.x = -Math.PI / 2;
+    gridGroup.add(gridMesh);
+
+    // Expanding wave rings
+    const waveRings = [];
+    for (let i = 0; i < 6; i++) {
+      const ring = new THREE.Mesh(
+        new THREE.TorusGeometry(1, 0.04, 8, 64),
+        new THREE.MeshBasicMaterial({ color: 0x44aaff, transparent: true, opacity: 0.6 })
+      );
+      ring.rotation.x = Math.PI / 2;
+      ring.userData.delay = i * 4;
+      gridGroup.add(ring);
+      waveRings.push(ring);
+    }
+
+    // Neutron star remnant at center of grid
+    const nsGrid = new THREE.Mesh(
+      new THREE.SphereGeometry(0.2, 32, 32),
+      new THREE.MeshBasicMaterial({ color: 0xaaddff })
+    );
+    const nsGridLight = new THREE.PointLight(0x44aaff, 2, 30);
+    gridGroup.add(nsGrid);
+    gridGroup.add(nsGridLight);
+
+    /* ─── Scene 5: Waves travel through planets ─────────────────────────────── */
+    const travelGroup = new THREE.Group();
+    scene.add(travelGroup);
+    travelGroup.visible = false;
+
+    const PLANET_DEFS = [
+      { x: -4, y: 2, z: -8, r: 0.6, col: 0xff5522 },
+      { x: 7, y: -2, z: -18, r: 1.3, col: 0xddaa44 },
+      { x: -7, y: 3, z: -29, r: 0.5, col: 0x88bbdd },
+      { x: 4, y: -1, z: -39, r: 1.8, col: 0xcc8833 },
+      { x: -5, y: 1, z: -49, r: 0.7, col: 0x6688ff },
+      { x: 6, y: 0, z: -58, r: 1.0, col: 0xff9966 },
+    ];
+
+    const travelPlanetMeshes = [];
+    PLANET_DEFS.forEach(def => {
+      const col = new THREE.Color(def.col);
+      const planetMat = new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: 0.05, roughness: 0.7 });
+      const planet = new THREE.Mesh(new THREE.SphereGeometry(def.r, 24, 24), planetMat);
+
+      const glowMat = new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0, side: THREE.BackSide });
+      const glow = new THREE.Mesh(new THREE.SphereGeometry(def.r * 2.8, 16, 16), glowMat);
+
+      const grp = new THREE.Group();
+      grp.add(planet); grp.add(glow);
+      grp.position.set(def.x, def.y, def.z);
+      travelGroup.add(grp);
+      travelPlanetMeshes.push({ planetMat, glowMat, worldZ: def.z });
+    });
+
+    // Wave-front rings — massive, in XY plane (perpendicular to Z travel)
+    // so the camera sees only a partial arc of a huge expanding sphere
+    const WAVE_RING_DEF = [
+      { r: 28, tube: 0.30, col: 0x55bbff, baseOpacity: 0.55 },
+      { r: 22, tube: 0.20, col: 0x88ddff, baseOpacity: 0.35 },
+      { r: 34, tube: 0.18, col: 0x3399cc, baseOpacity: 0.22 },
+    ];
+    const travelWaveRings = WAVE_RING_DEF.map(d => {
+      const ring = new THREE.Mesh(
+        new THREE.TorusGeometry(d.r, d.tube, 12, 180),
+        new THREE.MeshBasicMaterial({ color: d.col, transparent: true, opacity: 0, side: THREE.DoubleSide })
+      );
+      // Default torus: lies in XY plane, normal along Z = perpendicular to travel direction
+      ring.userData.baseOpacity = d.baseOpacity;
+      travelGroup.add(ring);
+      return ring;
+    });
+
+    // Background dust cloud
+    const dustGeo = new THREE.BufferGeometry();
+    const dustPos = new Float32Array(800 * 3);
+    for (let i = 0; i < 800; i++) {
+      dustPos[i * 3] = (Math.random() - .5) * 35;
+      dustPos[i * 3 + 1] = (Math.random() - .5) * 18;
+      dustPos[i * 3 + 2] = -Math.random() * 75;
+    }
+    dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPos, 3));
+    travelGroup.add(new THREE.Points(dustGeo,
+      new THREE.PointsMaterial({ color: 0x8899aa, size: 0.07, transparent: true, opacity: 0.5 })));
+
+    /* ─── Scene 6: Earth (textured) ─────────────────────────────────────────── */
+    const earthGroup = new THREE.Group();
+    scene.add(earthGroup);
+    earthGroup.visible = false;
+
+    const texLoader = new THREE.TextureLoader();
+    const TEX_BASE = 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r160/examples/textures/planets/';
+
+    const earth = new THREE.Mesh(
+      new THREE.SphereGeometry(2.5, 64, 64),
+      new THREE.MeshPhongMaterial({
+        map: texLoader.load(TEX_BASE + 'earth_atmos_2048.jpg'),
+        normalMap: texLoader.load(TEX_BASE + 'earth_normal_2048.jpg'),
+        specularMap: texLoader.load(TEX_BASE + 'earth_specular_2048.jpg'),
+        specular: new THREE.Color(0x555555),
+        shininess: 25,
+      })
+    );
+    earthGroup.add(earth);
+
+    // Atmosphere glow (thin blue halo)
+    earthGroup.add(new THREE.Mesh(
+      new THREE.SphereGeometry(2.75, 32, 32),
+      new THREE.MeshBasicMaterial({ color: 0x3366ff, transparent: true, opacity: 0.12, side: THREE.BackSide })
+    ));
+
+    // Sun-side directional light (added to scene, intensity managed in update)
+    const earthSunLight = new THREE.DirectionalLight(0xfff5ee, 1.8);
+    earthSunLight.position.set(-10, 5, -10);
+    earthSunLight.intensity = 0;
+    scene.add(earthSunLight);
+
+    // Gravitational Waves passing over Earth
+    const earthGWRings = [];
+    for (let i = 0; i < 6; i++) {
+      const ring = new THREE.Mesh(
+        new THREE.TorusGeometry(1, 0.05, 8, 100),
+        new THREE.MeshBasicMaterial({ color: 0x55bbff, transparent: true, opacity: 0 })
+      );
+      earthGroup.add(ring);
+      earthGWRings.push(ring);
+    }
+
+    /* ─── Scene 8 & 9: Einstein Telescope ───────────────────────────────────── */
+    const etGroup = new THREE.Group();
+    scene.add(etGroup);
+    etGroup.visible = false;
+
+    // 1. Earth Chunk (Floating Cutaway Shelf)
+    const earthGeo = new THREE.BoxGeometry(200, 10, 150);
+    const earthMats = [
+      new THREE.MeshStandardMaterial({ color: 0xebe8d7, depthWrite: false }), // right
+      new THREE.MeshStandardMaterial({ color: 0xebe8d7, depthWrite: false }), // left
+      new THREE.MeshStandardMaterial({ color: 0xc8d6b8, roughness: 1 }), // top (landscape)
+      new THREE.MeshStandardMaterial({ color: 0xebe8d7, depthWrite: false }), // bottom
+      new THREE.MeshStandardMaterial({ color: 0xe0d6bc, roughness: 1 }), // front (dirt cross section)
+      new THREE.MeshStandardMaterial({ color: 0xebe8d7, depthWrite: false }), // back
+    ];
+    const earthChunk = new THREE.Mesh(earthGeo, earthMats);
+    earthChunk.position.set(0, 5, -50); // Top is y=10. Front face is at z=25.
+    etGroup.add(earthChunk);
+
+    // 2. Einstein Telescope Facility
+    const TV = [
+      new THREE.Vector3(0, -15, 35),    // Foreground station (in the void)
+      new THREE.Vector3(-35, -15, -20), // Back left (under earth)
+      new THREE.Vector3(35, -15, -20)   // Back right (under earth)
+    ];
+
+    // Hubs
+    TV.forEach((v, i) => {
+      // Main station box
+      const hub = new THREE.Mesh(
+        new THREE.BoxGeometry(8, 4, 8),
+        new THREE.MeshStandardMaterial({ color: 0xdddddd, roughness: 0.4 })
+      );
+      hub.position.copy(v);
+      etGroup.add(hub);
+
+      // Tech towers inside hub
+      for(let j=0; j<2; j++) {
+        const tower = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.8, 0.8, 10, 16),
+          new THREE.MeshStandardMaterial({ color: 0xaaaaaa, metalness: 0.4 })
+        );
+        tower.position.copy(v);
+        tower.position.x += (j===0?-2:2);
+        tower.position.y += 3;
+        etGroup.add(tower);
+      }
+
+      // Add access shaft and floating island for the foreground station!
+      if (i === 0) {
+        const shaftLen = 25;
+        const shaft = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.8, 0.8, shaftLen, 16),
+          new THREE.MeshStandardMaterial({ color: 0xcccccc })
+        );
+        shaft.position.copy(v);
+        shaft.position.y += shaftLen / 2;
+        etGroup.add(shaft);
+
+        const island = new THREE.Mesh(
+          new THREE.CylinderGeometry(10, 10, 0.5, 32),
+          new THREE.MeshStandardMaterial({ color: 0x6b8e23 }) // Olive green
+        );
+        island.position.copy(v);
+        island.position.y += shaftLen; // y=10
+        etGroup.add(island);
+      }
+    });
+
+    const etLasers = [];
+    const projPoints = [];
+
+    // Arms, Lasers, and Projections
+    for (let i = 0; i < 3; i++) {
+      const a = TV[i];
+      const b = TV[(i + 1) % 3];
+      projPoints.push(new THREE.Vector3(a.x, 10.2, a.z)); // For surface projection
+
+      const dir = b.clone().sub(a);
+      const len = dir.length();
+      const mid = a.clone().add(b).multiplyScalar(0.5);
+      
+      // Tunnel (cutaway style, seeing inside)
+      const tunnel = new THREE.Mesh(
+        new THREE.CylinderGeometry(1.5, 1.5, len, 16, 1, true),
+        new THREE.MeshStandardMaterial({ color: 0xcccccc, side: THREE.BackSide })
+      );
+      tunnel.position.copy(mid);
+      tunnel.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize());
+      etGroup.add(tunnel);
+
+      // Purple Laser Beam
+      const laser = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.4, 0.4, len, 8),
+        new THREE.MeshBasicMaterial({ color: 0xcc00ff, transparent: true, opacity: 0.9 })
+      );
+      laser.position.copy(mid);
+      laser.quaternion.copy(tunnel.quaternion);
+      laser.userData = { disturbance: 0 };
+      etGroup.add(laser);
+      etLasers.push(laser);
+
+      // Projection plane (vertical purple translucent walls)
+      const aTop = new THREE.Vector3(a.x, 10.1, a.z);
+      const bTop = new THREE.Vector3(b.x, 10.1, b.z);
+      const projGeo = new THREE.BufferGeometry().setFromPoints([
+        a, b, bTop,
+        a, bTop, aTop
+      ]);
+      projGeo.computeVertexNormals();
+      const projPlane = new THREE.Mesh(
+        projGeo,
+        new THREE.MeshBasicMaterial({ color: 0xcc00ff, transparent: true, opacity: 0.15, side: THREE.DoubleSide, depthWrite: false })
+      );
+      etGroup.add(projPlane);
+    }
+    projPoints.push(projPoints[0]); // close loop
+
+    // Dashed line on surface
+    const projLineGeo = new THREE.BufferGeometry().setFromPoints(projPoints);
+    const projLineMat = new THREE.LineDashedMaterial({ color: 0xcc00ff, linewidth: 2, scale: 1, dashSize: 4, gapSize: 2 });
+    const projLine = new THREE.Line(projLineGeo, projLineMat);
+    projLine.computeLineDistances();
+    etGroup.add(projLine);
+
+    // Lights
+    const etLight = new THREE.PointLight(0xffffff, 2, 150);
+    etLight.position.set(0, -5, 10); // Illuminate the void and ET
+    etGroup.add(etLight);
+
+    const etSun = new THREE.DirectionalLight(0xffeedd, 2);
+    etSun.position.set(-20, 50, 30); // Sun for the surface
+    etGroup.add(etSun);
+
+    const etAmbient = new THREE.AmbientLight(0x223344, 0.6);
+    etGroup.add(etAmbient);
+
+    // Gravitational Wave Rings falling from sky
+    const gwRings = [];
+    for (let i = 0; i < 6; i++) {
+      const ring = new THREE.Mesh(
+        new THREE.TorusGeometry(1, 0.4, 16, 100),
+        new THREE.MeshBasicMaterial({ color: 0xaaaaaa, transparent: true, opacity: 0 })
+      );
+      ring.rotation.x = Math.PI / 2;
+      etGroup.add(ring);
+      gwRings.push(ring);
+    }
+
+    /* ─── Scene 9: Waveform ─────────────────────────────────────────────────── */
+    const waveformGroup = new THREE.Group();
+    scene.add(waveformGroup);
+    waveformGroup.visible = false;
+
+    const WF_POINTS = 300;
+    const wfPositions = new Float32Array(WF_POINTS * 3);
+    const wfGeo = new THREE.BufferGeometry();
+    wfGeo.setAttribute('position', new THREE.BufferAttribute(wfPositions, 3));
+    const wfLine = new THREE.Line(wfGeo, new THREE.LineBasicMaterial({ color: 0x44aaff }));
+    waveformGroup.add(wfLine);
+
+    // Detection readout screen
+    const screen = new THREE.Mesh(
+      new THREE.PlaneGeometry(10, 4),
+      new THREE.MeshBasicMaterial({ color: 0x001122, side: THREE.DoubleSide })
+    );
+    screen.position.set(0, 0, -1);
+    waveformGroup.add(screen);
+
+    /* ─── Ambient + directional light ───────────────────────────────────────── */
+    const ambient = new THREE.AmbientLight(0x111122, 0.8);
+    scene.add(ambient);
+
+    /* ─── State ─────────────────────────────────────────────────────────────── */
+    let clock = new THREE.Clock();
+    let elapsed = 0;
+    let paused = false;
+    let explodeT = 0; // local time within explosion scene
+
+    /* ─── Play/pause ─────────────────────────────────────────────────────────── */
+    elPlay.addEventListener('click', () => {
+      paused = !paused;
+      elPlay.textContent = paused ? 'PLAY' : 'PAUSE';
+      if (!paused) clock.start();
+    });
+
+    /* ─── Timeline scrub ─────────────────────────────────────────────────────── */
+    elTimeline.addEventListener('click', e => {
+      const rect = elTimeline.getBoundingClientRect();
+      const frac = (e.clientX - rect.left) / rect.width;
+      elapsed = clamp(frac, 0, 1) * TOTAL;
+      explodeT = 0;
+    });
+
+    /* ─── Camera helpers ─────────────────────────────────────────────────────── */
+    let camTarget = new THREE.Vector3();
+    let camPos = new THREE.Vector3(0, 0, 14);
+
+    /* ─── Main update ────────────────────────────────────────────────────────── */
+    function update(dt) {
+      const t = elapsed;
+
+      // Subtitle
+      const sub = subtitles.find(s => t >= s.s && t < s.e);
+      if (sub) {
+        elSubtitle.innerHTML = sub.text;
+        elLabel.textContent = sub.label;
+      }
+
+      // Timeline UI
+      elFill.style.width = (t / TOTAL * 100).toFixed(2) + '%';
+      elTime.textContent = `${fmt(t)} / ${fmt(TOTAL)}`;
+
+      // Hide all groups by default each frame (toggled below)
+      starGroup.visible = false;
+      atomGroup.visible = false;
+      collapseGroup.visible = false;
+      explodeGroup.visible = false;
+      gridGroup.visible = false;
+      travelGroup.visible = false;
+      earthGroup.visible = false;
+      etGroup.visible = false;
+      waveformGroup.visible = false;
+      elLigo.style.opacity = '0';
+      elET.style.opacity = '0';
+      earthSunLight.intensity = 0;
+      scene.background = null; // Reset background to black
+      stars.visible = true; // Show stars by default
+
+      /* ── Scene 0: Red supergiant (0-25s) ─────────────────────────── */
+      if (t < 25) {
+        starGroup.visible = true;
+        const pulse = 1 + 0.04 * Math.sin(t * 1.5);
+        starCore.scale.setScalar(pulse);
+        starLight.intensity = 2.5 + Math.sin(t * 2) * 0.5;
+
+        // Camera: zoom from z=14 toward z=1
+        if (t < 15) {
+          const st = t / 15;
+          camPos.set(0, 0, lerp(14, 4, ease(st)));
+        } else {
+          // Scene 1: dive inside star (t=15-25)
+          atomGroup.visible = true;
+          const st = (t - 15) / 10;
+          camPos.set(0, 0, lerp(4, 0, ease(st)));
+          // Fade star: holds near full opacity for first ~3s, then eases to 0 by t=25
+          const fadeOpacity = clamp(1 - ease(clamp(st / 0.95, 0, 1)), 0, 1);
+          starGroup.visible = fadeOpacity > 0.005;
+          if (starGroup.visible) {
+            starCore.material.transparent = true;
+            starCore.material.opacity = fadeOpacity;
+            starGroup.children.forEach(c => {
+              if (c.material && c !== starCore) c.material.transparent = true;
+            });
+          }
+          // Rotate plasma field slowly for a churning effect
+          plasmaPoints.rotation.y += dt * 0.08;
+          plasmaPoints.rotation.x += dt * 0.03;
+
+          // Pulse the central light on each fusion event (when st crosses 0.25, 0.5, 0.75)
+          const cycleIntensity = Math.exp(-((st * 4) % 1) * 6);
+          atomLight.intensity = 2 + cycleIntensity * 4;
+
+          // Animate atoms orbiting, pairing up, and physically colliding to fuse
+          atomMeshes.forEach(m => {
+            const d = m.userData;
+            const t0 = d.g * 0.25; // Start time for this generation
+            const t1 = (d.g + 1) * 0.25; // End time
+
+            if (st >= t0 && st < t1) {
+              m.visible = true;
+              let scale = 1;
+
+              // Orbit motion
+              d.angle += dt * d.speed;
+              const targetPos = new THREE.Vector3(
+                Math.cos(d.angle) * d.r,
+                Math.sin(d.angle) * d.yOff,
+                Math.sin(d.angle) * d.r
+              );
+
+              // Spawn phase (burst out)
+              if (d.g > 0 && st < t0 + 0.05) {
+                const spawnT = clamp((st - t0) / 0.05, 0, 1);
+                scale = spawnT;
+              }
+
+              // Fuse phase (crash into sibling to form parent)
+              if (st > t1 - 0.08) {
+                const fuseT = clamp((st - (t1 - 0.08)) / 0.08, 0, 1);
+                scale = 1 - fuseT;
+
+                if (d.g < 3) {
+                  const parentId = Math.floor(d.i / 2);
+                  const parentMesh = atomMeshes.find(p => p.userData.g === d.g + 1 && p.userData.i === parentId);
+                  if (parentMesh) {
+                    const pd = parentMesh.userData;
+                    const pAngle = pd.angle + dt * pd.speed;
+                    const pPos = new THREE.Vector3(
+                      Math.cos(pAngle) * pd.r,
+                      Math.sin(pAngle) * pd.yOff,
+                      Math.sin(pAngle) * pd.r
+                    );
+                    targetPos.lerp(pPos, ease(fuseT));
+                  }
+                } else {
+                  // Iron merges into center for core collapse
+                  targetPos.lerp(new THREE.Vector3(0, 0, 0), ease(fuseT));
+                }
+              }
+
+              m.position.copy(targetPos);
+              m.scale.setScalar(scale);
+            } else {
+              m.visible = false;
+            }
+          });
+        }
+      }
+
+      /* ── Scene 2: Core collapse (25-38s) ─────────────────────────── */
+      if (t >= 25 && t < 38) {
+        collapseGroup.visible = true;
+        const st = (t - 25) / 13;
+
+        // Atom group lingers briefly then fades
+        atomGroup.visible = st < 0.25;
+
+        // Camera: pull back to z=9 immediately so the core is clearly visible
+        // (scene 1 left camera near z=0, inside the sphere — fix that fast)
+        camPos.set(0, 0, lerp(9, 12, ease(st)));
+
+        // Iron core: holds size briefly, then rapidly collapses
+        const growPhase = clamp(st * 3, 0, 1);
+        const collapsePhase = clamp((st - 0.25) / 0.6, 0, 1);
+        const coreScale = lerp(lerp(1, 1.25, growPhase), 0.04, ease(collapsePhase));
+        ironCore.scale.setScalar(coreScale);
+
+        // Implosion particles converge toward centre
+        const implAttr = implGeo.getAttribute('position');
+        const pull = ease(collapsePhase);
+        for (let i = 0; i < IMPL_COUNT; i++) {
+          implAttr.array[i * 3] = implBasePos[i * 3] * (1 - pull);
+          implAttr.array[i * 3 + 1] = implBasePos[i * 3 + 1] * (1 - pull);
+          implAttr.array[i * 3 + 2] = implBasePos[i * 3 + 2] * (1 - pull);
+        }
+        implAttr.needsUpdate = true;
+        implPoints.material.opacity = clamp(1 - collapsePhase * 1.4, 0, 0.9);
+
+        // Core light: bright while collapsing, dims as it vanishes
+        collapseLight.intensity = lerp(4, 0, ease(collapsePhase));
+
+        // 1-second blackout just before scene 3
+        const darkness = clamp((t - 35.5) * 4, 0, 1) * clamp((38 - t) * 4, 0, 1);
+        elFlash.style.background = '#000';
+        elFlash.style.opacity = (darkness * 0.99).toFixed(2);
+      }
+
+      /* ── Scene 3: Supernova (38-55s) ─────────────────────────────── */
+      if (t >= 38 && t < 55) {
+        explodeGroup.visible = true;
+        const st = (t - 38) / 17;
+
+        // Flash at start
+        if (st < 0.05) {
+          elFlash.style.background = '#fff';
+          elFlash.style.opacity = (1 - st / 0.05).toFixed(2);
+        } else {
+          elFlash.style.opacity = '0';
+        }
+
+        explodeT += dt;
+        // Update explosion particle positions
+        const posAttr = explodeParticles.geometry.getAttribute('position');
+        for (let i = 0; i < EXPLODE_COUNT; i++) {
+          const vx = explodeVel[i * 3], vy = explodeVel[i * 3 + 1], vz = explodeVel[i * 3 + 2];
+          const drag = Math.exp(-explodeT * 0.3);
+          posAttr.array[i * 3] = vx * explodeT * drag;
+          posAttr.array[i * 3 + 1] = vy * explodeT * drag;
+          posAttr.array[i * 3 + 2] = vz * explodeT * drag;
+        }
+        posAttr.needsUpdate = true;
+
+        // Camera pulls back
+        camPos.set(0, 2, lerp(3, 20, ease(st)));
+      } else if (t < 38) {
+        elFlash.style.opacity = '0';
+      }
+
+      /* ── Scene 4: Spacetime grid (55-85s) ────────────────────────── */
+      if (t >= 55 && t < 85) {
+        gridGroup.visible = true;
+
+        const localT = t - 55;
+        gridMat.uniforms.uTime.value = localT;
+        const waveRadius = localT * 2.5;
+        gridMat.uniforms.uWaveR.value = waveRadius;
+
+        waveRings.forEach(ring => {
+          const r = clamp(waveRadius - ring.userData.delay, 0, 60);
+          ring.scale.setScalar(r);
+          ring.material.opacity = clamp(1 - r / 50, 0, 0.6);
+          ring.visible = r > 0.1;
+        });
+
+        const st4 = (t - 55) / 30;
+        camPos.set(0, lerp(15, 12, st4), lerp(0.1, 5, st4));
+        camTarget.set(0, 0, 0);
+      }
+
+      /* ── Scene 5: Waves through planets (85-115s) ────────────────── */
+      if (t >= 85 && t < 115) {
+        travelGroup.visible = true;
+        const st5 = (t - 85) / 30;
+
+        // Camera flies forward, slight lateral drift, level height
+        camPos.set(
+          Math.sin(st5 * Math.PI) * 3,
+          lerp(2, 1, st5),
+          lerp(5, -65, ease(st5))
+        );
+        // Look straight ahead through the ring centers — no downward tilt
+        camTarget.set(camPos.x * 0.05, camPos.y, camPos.z - 20);
+
+        // Wave front leads the camera by ~12 units along -Z
+        const waveFrontZ = camPos.z - 12;
+
+        // Each planet glows with a gaussian peak as the wave front passes through it
+        travelPlanetMeshes.forEach(p => {
+          const dz = p.worldZ - waveFrontZ;
+          const glow = Math.exp(-dz * dz * 0.04);
+          p.glowMat.opacity = glow * 0.6;
+          p.planetMat.emissiveIntensity = glow * 1.5 + 0.05;
+        });
+
+        // Rings are in XY plane (perpendicular to Z travel).
+        // Centre each ring at the camera's X/Y so the camera looks straight
+        // through the hole — rings appear as full circles coming toward you.
+        travelWaveRings.forEach((ring, i) => {
+          ring.position.set(camPos.x, camPos.y, waveFrontZ - i * 7);
+          const pulse = 0.85 + 0.15 * Math.sin(elapsed * 1.8 + i * 1.2);
+          ring.material.opacity = ring.userData.baseOpacity * pulse;
+          ring.rotation.z += dt * (0.012 - i * 0.003);
+        });
+      }
+
+      /* ── Scene 6: Earth + LIGO (115-130s) ───────────────────────── */
+      if (t >= 115 && t < 130) {
+        earthGroup.visible = true;
+        earthSunLight.intensity = 1.8;
+        const st = (t - 115) / 15;
+
+        // Smoothly stop rotation and tilt to target Europe (Germany/Belgium/Netherlands)
+        const TARGET_EARTH_ROT = 14.0; // Longitude ~9°E (Germany)
+        const TARGET_EARTH_TILT = -1.05; // Latitude hit point ~50°N (Germany)
+        const startRot = 115 * 0.12;
+        const easePhase = ease(clamp(st * 1.5, 0, 1));
+        earth.rotation.y = lerp(startRot, TARGET_EARTH_ROT, easePhase);
+        earth.rotation.x = lerp(0, TARGET_EARTH_TILT, easePhase);
+
+        camPos.set(0, 0, lerp(-55, -10, ease(clamp(st * 1.5, 0, 1))));
+        camTarget.set(0, 0, 0);
+
+        // Animate GW Rings passing over Earth
+        const localT = t - 115;
+        earthGWRings.forEach((ring, i) => {
+          const delay = i * 0.6;
+          if (localT > delay) {
+            const wt = (localT - delay) % 4.0; 
+            const progress = wt / 4.0; // 0 to 1
+            // Constant massive radius: behaves like a plane wave from a distant source
+            ring.scale.setScalar(40); 
+            // Travel from deep space (behind camera) past the Earth
+            ring.position.z = lerp(-120, 40, progress); 
+            ring.material.opacity = clamp(Math.sin(progress * Math.PI) * 0.25, 0, 0.25);
+          } else {
+            ring.material.opacity = 0;
+          }
+        });
+
+        if (st > 0.3) {
+          elLigo.style.opacity = clamp((st - 0.3) * 4, 0, 1).toFixed(2);
+        }
+      }
+
+      /* ── Scene 7: Underground dive (130-140s) ───────────────────── */
+      if (t >= 130 && t < 140) {
+        earthGroup.visible = true; // Keep earth visible as we zoom in
+        earthSunLight.intensity = 1.8; // Maintain sunlight
+        earth.rotation.y = 14.0; // Hold rotation on Europe
+        earth.rotation.x = -1.05; // Hold tilt on Europe
+        const st = (t - 130) / 10;
+
+        camPos.set(
+          0,
+          lerp(0, -0.5, ease(st)), // Slight dip down
+          lerp(-10, -2.6, ease(st)) // Zoom right into the surface
+        );
+        camTarget.set(0, 0, 0);
+
+        // Fade to dark transition
+        elFlash.style.background = '#0a0502';
+        elFlash.style.opacity = (clamp(st * 4 - 3, 0, 1)).toFixed(2);
+      }
+
+      /* ── Scene 8: Einstein Telescope (140-155s) ─────────────────── */
+      if (t >= 140 && t < 155) {
+        etGroup.visible = true;
+        stars.visible = false; // Hide stars since background is diagram beige
+        scene.background = new THREE.Color(0xebe8d7); // Beige diagram background
+
+        const st = (t - 140) / 15;
+
+        elET.style.opacity = (clamp(st * 3, 0, 1)).toFixed(2);
+
+        // Fade in from black
+        if (st < 0.1) {
+          elFlash.style.background = '#0a0502';
+          elFlash.style.opacity = (1 - st * 10).toFixed(2);
+        } else {
+          elFlash.style.opacity = '0';
+        }
+
+        // Camera: Starts looking at the whole diorama, slowly orbits/zooms in
+        camPos.set(
+          Math.sin(st * 0.5) * 40,
+          lerp(20, 10, ease(st)),
+          lerp(70, 50, ease(st))
+        );
+        camTarget.set(0, -5, 0);
+
+        // Animate Gravitational Waves hitting
+        const localT = t - 140;
+        gwRings.forEach((ring, i) => {
+          const delay = i * 0.5;
+          if (localT > delay) {
+            const wt = localT - delay;
+            // Waves expand outwards and downwards
+            const radius = 1 + wt * 30;
+            const yPos = 50 - wt * 20;
+            ring.scale.setScalar(radius);
+            ring.position.y = yPos;
+
+            // Pulse opacity
+            ring.material.opacity = clamp(1 - wt / 3, 0, 0.4);
+
+            // Disturb lasers when wave passes through surface/telescope
+            if (yPos < 12 && yPos > -15) {
+              etLasers.forEach(l => {
+                l.userData.disturbance = 1.0;
+              });
+            }
+          }
+        });
+
+        // Decay laser flash
+        etLasers.forEach(l => {
+          if (l.userData.disturbance > 0) {
+            // Disturbed state: flicker and bulge
+            const d = l.userData.disturbance;
+            l.material.opacity = 0.5 + Math.random() * 0.5;
+            l.scale.set(1 + Math.random() * d * 3, 1, 1 + Math.random() * d * 3);
+            l.material.color.setHex(Math.random() > 0.5 ? 0xffffff : 0xcc00ff);
+            l.userData.disturbance = Math.max(0, d - dt * 2.0);
+          } else {
+            // Normal state
+            l.material.opacity = 0.9;
+            l.scale.setScalar(1);
+            l.material.color.setHex(0xcc00ff);
+          }
+        });
+      }
+
+      /* ── Scene 9: Waveform + fade to black (155-170s) ───────────── */
+      if (t >= 155) {
+        waveformGroup.visible = true;
+        const st = (t - 155) / 15;
+
+        // Build waveform — chirp signal (like GW detection)
+        const wfPos = wfGeo.getAttribute('position');
+        for (let i = 0; i < WF_POINTS; i++) {
+          const x = (i / WF_POINTS - 0.5) * 9;
+          const phase = i / WF_POINTS;
+          const chirpFreq = 1 + phase * 12;
+          const chirpAmp = phase < st ? Math.exp(-Math.pow((phase - st) * 6, 2)) * 0.8 * Math.min(st * 3, 1) : 0;
+          const y = Math.sin(phase * chirpFreq * Math.PI * 20) * chirpAmp;
+          wfPos.array[i * 3] = x;
+          wfPos.array[i * 3 + 1] = y;
+          wfPos.array[i * 3 + 2] = 0;
+        }
+        wfPos.needsUpdate = true;
+
+        camPos.set(0, 0, 8);
+        camTarget.set(0, 0, 0);
+
+        // Fade to black after ~12s
+        elFadeBlack.style.opacity = clamp((st - 0.7) / 0.3, 0, 1).toFixed(2);
+      } else {
+        elFadeBlack.style.opacity = '0';
+      }
+
+      /* ── Camera apply ─────────────────────────────────────────────── */
+      camera.position.lerp(camPos, 0.04);
+      camera.lookAt(camTarget);
+
+      /* ── Star field always rotates ────────────────────────────────── */
+      stars.rotation.y += dt * 0.005;
+    }
+
+    /* ─── Render loop ────────────────────────────────────────────────────────── */
+    function animate() {
+      requestAnimationFrame(animate);
+      const dt = paused ? 0 : Math.min(clock.getDelta(), 0.05);
+      elapsed = clamp(elapsed + dt, 0, TOTAL);
+      update(dt);
+      renderer.render(scene, camera);
+    }
+
+    clock.start();
+    animate();
+  </script>
+</body>
+
+</html>
