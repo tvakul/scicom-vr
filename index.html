@@ -941,14 +941,17 @@
     scene.add(etGroup);
     etGroup.visible = false;
 
-    // 1. Earth Chunk (Green landscape diorama)
+    // 1. Earth Chunk (Landscape diorama with satellite surface map)
+    const surfaceTex = texLoader.load('et_surface.png');
+    surfaceTex.wrapS = THREE.ClampToEdgeWrapping;
+    surfaceTex.wrapT = THREE.ClampToEdgeWrapping;
     const earthGeo = new THREE.BoxGeometry(180, 12, 300);
     const earthMats = [
       new THREE.MeshStandardMaterial({ color: 0x8d6e63, transparent: true, opacity: 0.4, depthWrite: false }), // right
       new THREE.MeshStandardMaterial({ color: 0x8d6e63, transparent: true, opacity: 0.4, depthWrite: false }), // left
-      new THREE.MeshStandardMaterial({ color: 0x4caf50, transparent: true, opacity: 0.6, roughness: 1, depthWrite: false }),    // top (green grass)
+      new THREE.MeshStandardMaterial({ map: surfaceTex, transparent: true, opacity: 0.7, roughness: 1, depthWrite: false }), // top (satellite surface map)
       new THREE.MeshStandardMaterial({ color: 0x8d6e63, transparent: true, opacity: 0.2, depthWrite: false }), // bottom
-      new THREE.MeshStandardMaterial({ color: 0x8d6e63, transparent: true, opacity: 0.5, roughness: 1, depthWrite: false }),    // front
+      new THREE.MeshStandardMaterial({ color: 0x8d6e63, transparent: true, opacity: 0.5, roughness: 1, depthWrite: false }), // front
       new THREE.MeshStandardMaterial({ color: 0x8d6e63, transparent: true, opacity: 0.2, depthWrite: false }), // back
     ];
     const earthChunk = new THREE.Mesh(earthGeo, earthMats);
@@ -1067,9 +1070,14 @@
     });
 
     for (let i = 0; i < 3; i++) {
-      const a = TV[i];
-      const b = TV[(i + 1) % 3];
-      projPoints.push(new THREE.Vector3(a.x, 10.2, a.z));
+      // Connect tunnels at the bottom of hubs
+      const aCenter = TV[i];
+      const bCenter = TV[(i + 1) % 3];
+      const aH = (i === 0) ? 18 : 14;
+      const bH = ((i + 1) % 3 === 0) ? 18 : 14;
+      const a = new THREE.Vector3(aCenter.x, aCenter.y - aH / 2, aCenter.z);
+      const b = new THREE.Vector3(bCenter.x, bCenter.y - bH / 2, bCenter.z);
+      projPoints.push(new THREE.Vector3(aCenter.x, 10.2, aCenter.z));
 
       const dir = b.clone().sub(a);
       const len = dir.length();
@@ -1640,13 +1648,37 @@
           elFlash.style.opacity = '0';
         }
 
-        // Camera: Starts looking at the whole diorama from further back
-        camPos.set(
-          Math.sin(st * 0.5) * 60,
-          lerp(45, 30, ease(st)),
-          lerp(110, 80, ease(st))
-        );
-        camTarget.set(0, -10, 0);
+        // Two-phase camera:
+        // Phase 1 (140-145s): High overhead view of full triangle
+        // Phase 2 (145-155s): Dive underground to see one corner up close
+        const phase1End = 145;
+        const phase2Start = 145;
+
+        if (t < phase1End) {
+          // Phase 1: Top-down overview with slow orbit
+          const p1 = (t - 140) / (phase1End - 140); // 0 to 1
+          camPos.set(
+            Math.sin(p1 * 0.4) * 20,
+            lerp(120, 80, ease(p1)),
+            lerp(30, 50, ease(p1))
+          );
+          camTarget.set(0, -10, 0);
+        } else {
+          // Phase 2: Dive underground toward the foreground hub
+          const p2 = clamp((t - phase2Start) / (155 - phase2Start), 0, 1);
+          const ep2 = ease(p2);
+          // Hub 0 is at (0, -20, 45)
+          camPos.set(
+            lerp(8, 25, ep2),
+            lerp(80, -8, ep2),
+            lerp(50, 60, ep2)
+          );
+          camTarget.set(
+            lerp(0, 0, ep2),
+            lerp(-10, -20, ep2),
+            lerp(0, 45, ep2)
+          );
+        }
 
         // Animate Gravitational Waves hitting
         const localT = t - 140;
