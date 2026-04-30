@@ -351,7 +351,7 @@
     });
 
     /* ─── Voiceover / Scene timeline ────────────────────────────────────────── */
-    const TOTAL = 170;
+    const TOTAL = 175;
 
     const subtitles = [
       {
@@ -391,7 +391,7 @@
         text: 'This proposed European facility will be built deep underground to escape seismic noise. With 10-kilometre triangular arms and super-cooled mirrors, it will be ten times more sensitive than current detectors.'
       },
       {
-        s: 155, e: 170, label: 'DECODING THE UNIVERSE',
+        s: 155, e: 175, label: 'DECODING THE UNIVERSE',
         text: 'By decoding these faint waves, we will finally see inside the heart of exploding stars — revealing the exact physics that forge the elements of our universe.'
       },
     ];
@@ -945,18 +945,20 @@
     const surfaceTex = texLoader.load('et_surface.png');
     surfaceTex.wrapS = THREE.ClampToEdgeWrapping;
     surfaceTex.wrapT = THREE.ClampToEdgeWrapping;
+    surfaceTex.minFilter = THREE.LinearFilter;
+    surfaceTex.generateMipmaps = false;
     const earthGeo = new THREE.BoxGeometry(180, 12, 300);
     const earthMats = [
       new THREE.MeshStandardMaterial({ color: 0x8d6e63, transparent: true, opacity: 0.4, depthWrite: false }), // right
       new THREE.MeshStandardMaterial({ color: 0x8d6e63, transparent: true, opacity: 0.4, depthWrite: false }), // left
-      new THREE.MeshStandardMaterial({ map: surfaceTex, transparent: true, opacity: 0.7, roughness: 1, depthWrite: false }), // top (satellite surface map)
+      new THREE.MeshStandardMaterial({ map: surfaceTex, transparent: true, opacity: 1.0, roughness: 1, depthWrite: true }), // top (satellite surface map)
       new THREE.MeshStandardMaterial({ color: 0x8d6e63, transparent: true, opacity: 0.2, depthWrite: false }), // bottom
       new THREE.MeshStandardMaterial({ color: 0x8d6e63, transparent: true, opacity: 0.5, roughness: 1, depthWrite: false }), // front
       new THREE.MeshStandardMaterial({ color: 0x8d6e63, transparent: true, opacity: 0.2, depthWrite: false }), // back
     ];
     const earthChunk = new THREE.Mesh(earthGeo, earthMats);
     earthChunk.position.set(0, 4, 20);
-    earthChunk.renderOrder = 0;
+    earthChunk.renderOrder = -10;
     etGroup.add(earthChunk);
 
     // 2. Einstein Telescope Facility
@@ -1151,6 +1153,7 @@
 
     /* ─── Scene 9: Waveform ─────────────────────────────────────────────────── */
     const waveformGroup = new THREE.Group();
+    waveformGroup.renderOrder = 100;
     scene.add(waveformGroup);
     waveformGroup.visible = false;
 
@@ -1159,15 +1162,42 @@
     const wfGeo = new THREE.BufferGeometry();
     wfGeo.setAttribute('position', new THREE.BufferAttribute(wfPositions, 3));
     const wfLine = new THREE.Line(wfGeo, new THREE.LineBasicMaterial({ color: 0x44aaff }));
+    wfLine.position.set(0, -1.0, -0.95);
+    wfLine.renderOrder = 52;
     waveformGroup.add(wfLine);
 
-    // Detection readout screen
+    // Detection readout screen (waveform background)
     const screen = new THREE.Mesh(
-      new THREE.PlaneGeometry(10, 4),
+      new THREE.PlaneGeometry(10, 2.5),
       new THREE.MeshBasicMaterial({ color: 0x001122, side: THREE.DoubleSide })
     );
-    screen.position.set(0, 0, -1);
+    screen.position.set(0, -0.5, -1.05); // Background slightly further back
+    screen.renderOrder = 50;
     waveformGroup.add(screen);
+
+    // Simulation video screen (above waveform)
+    const simVideo = document.createElement('video');
+    simVideo.src = 'simulation.mp4';
+    simVideo.crossOrigin = 'anonymous';
+    simVideo.loop = false;
+    simVideo.muted = true;
+    simVideo.playsInline = true;
+    simVideo.style.display = 'none';
+    document.body.appendChild(simVideo);
+
+    const simVideoTex = new THREE.VideoTexture(simVideo);
+    simVideoTex.minFilter = THREE.LinearFilter;
+    simVideoTex.magFilter = THREE.LinearFilter;
+
+    const simScreen = new THREE.Mesh(
+      new THREE.PlaneGeometry(10, 5.6),
+      new THREE.MeshBasicMaterial({ map: simVideoTex, side: THREE.DoubleSide })
+    );
+    simScreen.position.set(0, 2.3, -1.0); // Video at middle depth
+    simScreen.renderOrder = 51;
+    waveformGroup.add(simScreen);
+
+    let simVideoStarted = false;
 
     /* ─── Ambient + directional light ───────────────────────────────────────── */
     const ambient = new THREE.AmbientLight(0x111122, 0.8);
@@ -1266,6 +1296,36 @@
         l.material.color.setHex(0xcc00ff);
         l.userData.disturbance = 0;
       });
+
+      // Reset simulation video
+      if (t < 155 && simVideoStarted) {
+        simVideo.pause();
+        simVideo.currentTime = 0;
+        simVideoStarted = false;
+      }
+
+      // Keep video in sync with pause state and timeline
+      if (t >= 155 && t < 175) {
+        // Adjust playback speed to fit the 20s window if we know the duration
+        if (simVideo.duration && simVideo.playbackRate === 1) {
+          simVideo.playbackRate = simVideo.duration / 20;
+        }
+
+        if (paused && !simVideo.paused) {
+          simVideo.pause();
+        } else if (!paused && simVideo.paused && simVideo.currentTime < simVideo.duration) {
+          simVideo.play().catch(() => {});
+        }
+
+        // Only force jump if we are significantly out of sync (e.g. after scrubbing)
+        const videoTarget = (t - 155) * (simVideo.playbackRate || 1);
+        if (Math.abs(simVideo.currentTime - videoTarget) > 0.3) {
+          simVideo.currentTime = clamp(videoTarget, 0, simVideo.duration || 100);
+        }
+      } else if (t >= 175 && simVideoStarted) {
+        simVideo.pause();
+        simVideoStarted = false;
+      }
 
       // Hide all groups by default each frame (toggled below)
       starGroup.visible = false;
@@ -1723,10 +1783,17 @@
         });
       }
 
-      /* ── Scene 9: Waveform + fade to black (155-170s) ───────────── */
+      /* ── Scene 9: Waveform + simulation video (155-170s) ─────── */
       if (t >= 155) {
         waveformGroup.visible = true;
-        const st = (t - 155) / 15;
+        const st = (t - 155) / 20;
+
+        // Start simulation video playback
+        if (!simVideoStarted && !paused) {
+          simVideo.currentTime = 0;
+          simVideo.play().catch(() => {});
+          simVideoStarted = true;
+        }
 
         // Build waveform — realistic GW chirp: inspiral → merger → ringdown
         const wfPos = wfGeo.getAttribute('position');
@@ -1770,8 +1837,8 @@
         camPos.set(0, 0, 8);
         camTarget.set(0, 0, 0);
 
-        // Fade to black after ~12s
-        elFadeBlack.style.opacity = clamp((st - 0.7) / 0.3, 0, 1).toFixed(2);
+        // Fade to black (slow 10s fade starting at 165s)
+        elFadeBlack.style.opacity = clamp((st - 0.5) / 0.5, 0, 1).toFixed(2);
       } else {
         elFadeBlack.style.opacity = '0';
       }
