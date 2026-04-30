@@ -654,7 +654,7 @@
     }
     explodeGeo.setAttribute('position', new THREE.BufferAttribute(explodePos.slice(), 3));
     explodeGeo.setAttribute('color', new THREE.BufferAttribute(explodeCol, 3));
-    const explodeMat = new THREE.PointsMaterial({ size: 0.12, vertexColors: true, sizeAttenuation: true });
+    const explodeMat = new THREE.PointsMaterial({ size: 0.12, vertexColors: true, sizeAttenuation: true, transparent: true, opacity: 1 });
     const explodeParticles = new THREE.Points(explodeGeo, explodeMat);
     explodeGroup.add(explodeParticles);
 
@@ -678,6 +678,7 @@
         uTime: { value: 0 },
         uWaveR: { value: 0 },
         uWaveAmp: { value: 1.5 },
+        uOpacity: { value: 1.0 },
       },
       vertexShader: `
     uniform float uTime;
@@ -701,10 +702,11 @@
       fragmentShader: `
     varying float vDisp;
     uniform float uWaveAmp;
+    uniform float uOpacity;
     void main() {
       float i = abs(vDisp) / max(uWaveAmp, 0.001);
       vec3 col = mix(vec3(0.05,0.1,0.35), vec3(0.3,0.7,1.0), clamp(i,0.0,1.0));
-      gl_FragColor = vec4(col, 0.85);
+      gl_FragColor = vec4(col, 0.85 * uOpacity);
     }
   `,
       wireframe: true, transparent: true,
@@ -742,9 +744,12 @@
 
     const PLANET_DEFS = [
       { x: -4, y: 2, z: -8, r: 0.6, col: 0xff5522 },
+      { x: -2, y: -3, z: -12, r: 0.4, col: 0xaaaaaa, noCorona: true },
       { x: 7, y: -2, z: -18, r: 1.3, col: 0xddaa44 },
+      { x: 5, y: 4, z: -25, r: 0.9, col: 0x55aa55, noCorona: true },
       { x: -7, y: 3, z: -29, r: 0.5, col: 0x88bbdd },
       { x: 4, y: -1, z: -39, r: 1.8, col: 0xcc8833 },
+      { x: -8, y: -2, z: -45, r: 1.1, col: 0x8844ff, noCorona: true },
       { x: -5, y: 1, z: -49, r: 0.7, col: 0x6688ff },
       { x: 6, y: 0, z: -58, r: 1.0, col: 0xff9966 },
     ];
@@ -755,11 +760,16 @@
       const planetMat = new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: 0.05, roughness: 0.7 });
       const planet = new THREE.Mesh(new THREE.SphereGeometry(def.r, 24, 24), planetMat);
 
-      const glowMat = new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0, side: THREE.BackSide });
-      const glow = new THREE.Mesh(new THREE.SphereGeometry(def.r * 2.8, 16, 16), glowMat);
-
+      let glowMat = null;
       const grp = new THREE.Group();
-      grp.add(planet); grp.add(glow);
+      grp.add(planet);
+
+      if (!def.noCorona) {
+        glowMat = new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0, side: THREE.BackSide });
+        const glow = new THREE.Mesh(new THREE.SphereGeometry(def.r * 2.8, 16, 16), glowMat);
+        grp.add(glow);
+      }
+
       grp.position.set(def.x, def.y, def.z);
       travelGroup.add(grp);
       travelPlanetMeshes.push({ planetMat, glowMat, worldZ: def.z });
@@ -1114,6 +1124,12 @@
       earthGroup.visible = false;
       etGroup.visible = false;
       waveformGroup.visible = false;
+      
+      // Reset supernova opacity
+      explodeParticles.material.opacity = 1;
+      
+      // Reset grid opacity
+      if (gridMat.uniforms.uOpacity) gridMat.uniforms.uOpacity.value = 1.0;
 
       /* ── Scene 0: Red supergiant (0-25s) ─────────────────────────── */
       if (t < 25) {
@@ -1228,10 +1244,7 @@
         collapseGroup.visible = true;
         const st = (t - 25) / 13;
 
-        // Atom group is now hidden immediately at t=25
-
         // Camera: pull back to z=9 immediately so the core is clearly visible
-        // (scene 1 left camera near z=0, inside the sphere — fix that fast)
         camPos.set(0, 0, lerp(9, 12, ease(st)));
 
         // Iron core: holds size briefly, then rapidly collapses
@@ -1285,8 +1298,8 @@
         }
         posAttr.needsUpdate = true;
 
-        // Camera pulls back
-        camPos.set(0, 2, lerp(3, 20, ease(st)));
+        // Camera pulls back - starting from the core collapse end position (0, 0, 12)
+        camPos.set(0, lerp(0, 15, ease(st)), lerp(12, 20, ease(st)));
       } else if (t < 38) {
         elFlash.style.opacity = '0';
       }
@@ -1294,6 +1307,16 @@
       /* ── Scene 4: Spacetime grid (55-85s) ────────────────────────── */
       if (t >= 55 && t < 85) {
         gridGroup.visible = true;
+        const st4 = (t - 55) / 30;
+
+        // Linger and fade the supernova explosion for 5 seconds
+        if (t < 60) {
+          explodeGroup.visible = true;
+          const fadeSt = (t - 55) / 5;
+          explodeParticles.material.opacity = 1 - fadeSt;
+        } else {
+          explodeParticles.material.opacity = 0;
+        }
 
         const localT = t - 55;
         gridMat.uniforms.uTime.value = localT;
@@ -1307,42 +1330,67 @@
           ring.visible = r > 0.1;
         });
 
-        const st4 = (t - 55) / 30;
-        camPos.set(0, lerp(15, 12, st4), lerp(0.1, 5, st4));
+        // Camera continues from the supernova end position (0, 15, 20) and lowers toward the grid
+        camPos.set(0, lerp(15, 2, st4), lerp(20, 5, st4));
         camTarget.set(0, 0, 0);
       }
 
       /* ── Scene 5: Waves through planets (85-115s) ────────────────── */
       if (t >= 85 && t < 115) {
-        travelGroup.visible = true;
-        const st5 = (t - 85) / 30;
+        // 1. Grid Mesh Fade (85-88s)
+        const gridFadeT = sceneT(85, 88, t);
+        gridMat.uniforms.uOpacity.value = 1.0 - gridFadeT;
 
-        // Camera flies forward, slight lateral drift, level height
+        // 2. Camera movement starts at 88s
+        const movementSt = sceneT(88, 115, t);
+        // Custom interpolation: stationary until 88, then move. 
+        // Passes z=0 (neutron star) around t=91.5s
+        const zPos = (t < 88) ? 5 : lerp(5, -65, Math.pow(movementSt, 1.2));
+        
         camPos.set(
-          Math.sin(st5 * Math.PI) * 3,
-          lerp(2, 1, st5),
-          lerp(5, -65, ease(st5))
+          Math.sin(movementSt * Math.PI) * 3,
+          lerp(2, 1, movementSt),
+          zPos
         );
-        // Look straight ahead through the ring centers — no downward tilt
-        camTarget.set(camPos.x * 0.05, camPos.y, camPos.z - 20);
 
-        // Wave front leads the camera by ~12 units along -Z
+        // 3. Visibility logic
+        gridGroup.visible = (zPos > -1); // Hide once we pass the neutron star
+        travelGroup.visible = (zPos < 4); // Show travel scene elements as we approach them
+        
+        // Planet reveal fade (starts around the time we pass the star)
+        const planetReveal = sceneT(91, 95, t);
+
+        // Camera target transition
+        if (t < 88) {
+          camTarget.set(0, 0, 0);
+        } else {
+          const targetX = camPos.x * 0.05;
+          const targetY = camPos.y;
+          const targetZ = camPos.z - 20;
+          const targetEase = clamp((t - 88) * 0.5, 0, 1);
+          camTarget.set(
+            lerp(0, targetX, targetEase),
+            lerp(0, targetY, targetEase),
+            lerp(0, targetZ, targetEase)
+          );
+        }
+
+        // Wave-front rings and planets
         const waveFrontZ = camPos.z - 12;
 
-        // Each planet glows with a gaussian peak as the wave front passes through it
         travelPlanetMeshes.forEach(p => {
           const dz = p.worldZ - waveFrontZ;
           const glow = Math.exp(-dz * dz * 0.04);
-          p.glowMat.opacity = glow * 0.6;
-          p.planetMat.emissiveIntensity = glow * 1.5 + 0.05;
+          // Only show planets after the star is passed
+          if (p.glowMat) {
+            p.glowMat.opacity = glow * 0.6 * planetReveal;
+          }
+          p.planetMat.emissiveIntensity = (glow * 1.5 + 0.05) * planetReveal;
         });
 
-        // Rings are in XY plane (perpendicular to Z travel).
-        // Centre each ring at the camera's X/Y so the camera looks straight
-        // through the hole — rings appear as full circles coming toward you.
         travelWaveRings.forEach((ring, i) => {
           ring.position.set(camPos.x, camPos.y, waveFrontZ - i * 7);
-          const pulse = 0.85 + 0.15 * Math.sin(elapsed * 1.8 + i * 1.2);
+          const pulse = (0.85 + 0.15 * Math.sin(elapsed * 1.8 + i * 1.2)) * planetReveal;
           ring.material.opacity = ring.userData.baseOpacity * pulse;
           ring.rotation.z += dt * (0.012 - i * 0.003);
         });
