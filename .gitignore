@@ -1,2 +1,3 @@
-SCICOM.pdf
+*.pdf
 *.docx
+.vscode

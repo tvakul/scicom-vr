@@ -82,6 +82,46 @@
       background: rgba(255, 255, 255, .12);
     }
 
+    #restart-btn {
+      background: linear-gradient(135deg, #ff6b35, #ff9f43);
+      border: none;
+      color: #fff;
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 30px rgba(255, 107, 53, 0.5);
+      transition: transform 0.3s, box-shadow 0.3s, background 0.3s;
+      margin-bottom: 20px;
+    }
+
+    #restart-btn:hover {
+      transform: scale(1.12);
+      box-shadow: 0 0 50px rgba(255, 107, 53, 0.8);
+    }
+
+    #restart-btn svg {
+      width: 36px;
+      height: 36px;
+      fill: currentColor;
+    }
+
+    #restart-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      backdrop-filter: blur(8px);
+      transition: opacity 0.8s;
+    }
+
     #timeline {
       width: 320px;
       height: 5px;
@@ -182,6 +222,57 @@
       pointer-events: none;
       transition: opacity 1.5s;
     }
+
+    #start-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      backdrop-filter: blur(10px);
+      transition: opacity 0.8s;
+    }
+
+    #start-btn {
+      background: linear-gradient(135deg, #4488ff, #00ccff);
+      border: none;
+      color: #fff;
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 30px rgba(0, 150, 255, 0.5);
+      transition: transform 0.3s, box-shadow 0.3s, background 0.3s;
+      margin-bottom: 20px;
+    }
+
+    #start-btn:hover {
+      transform: scale(1.12);
+      box-shadow: 0 0 50px rgba(0, 150, 255, 0.8);
+      background: linear-gradient(135deg, #5599ff, #11ddff);
+    }
+
+    #start-btn svg {
+      width: 36px;
+      height: 36px;
+      fill: currentColor;
+    }
+
+    .start-title {
+      color: #fff;
+      font-size: 24px;
+      letter-spacing: 8px;
+      margin-bottom: 40px;
+      text-transform: uppercase;
+      font-weight: 300;
+      opacity: 0.9;
+    }
   </style>
 </head>
 
@@ -189,6 +280,20 @@
 
   <div id="flash"></div>
   <div id="fade-black"></div>
+
+  <div id="start-overlay">
+    <h1 class="start-title">SUPERNOVA</h1>
+    <button id="start-btn" aria-label="Start Experience">
+      <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+    </button>
+  </div>
+
+  <div id="restart-overlay">
+    <h1 class="start-title">THE END</h1>
+    <button id="restart-btn" aria-label="Restart Experience">
+      <svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+    </button>
+  </div>
   <div id="scene-label">SUPERNOVA</div>
   <div id="subtitle"></div>
 
@@ -292,6 +397,10 @@
     const elFill = document.getElementById('timeline-fill');
     const elTime = document.getElementById('time-disp');
     const elPlay = document.getElementById('play-btn');
+    const elRestart = document.getElementById('restart-btn');
+    const elRestartOverlay = document.getElementById('restart-overlay');
+    const elStartOverlay = document.getElementById('start-overlay');
+    const elStartBtn = document.getElementById('start-btn');
     const elFlash = document.getElementById('flash');
     const elFadeBlack = document.getElementById('fade-black');
     const elLigo = document.getElementById('ligo-popup');
@@ -881,7 +990,7 @@
     /* ─── State ─────────────────────────────────────────────────────────────── */
     let clock = new THREE.Clock();
     let elapsed = 0;
-    let paused = false;
+    let paused = true;
     let explodeT = 0; // local time within explosion scene
 
     /* ─── Play/pause ─────────────────────────────────────────────────────────── */
@@ -897,6 +1006,26 @@
       const frac = (e.clientX - rect.left) / rect.width;
       elapsed = clamp(frac, 0, 1) * TOTAL;
       explodeT = 0;
+    });
+
+    /* ─── Restart logic ──────────────────────────────────────────────────────── */
+    elRestart.addEventListener('click', () => {
+      elRestartOverlay.style.display = 'none';
+      elapsed = 0;
+      explodeT = 0;
+      paused = false;
+      elPlay.textContent = 'PAUSE';
+      clock.start();
+    });
+
+    /* ─── Start logic ────────────────────────────────────────────────────────── */
+    elStartBtn.addEventListener('click', () => {
+      elStartOverlay.style.opacity = '0';
+      setTimeout(() => {
+        elStartOverlay.style.display = 'none';
+        paused = false;
+        clock.start();
+      }, 800);
     });
 
     /* ─── Camera helpers ─────────────────────────────────────────────────────── */
@@ -917,6 +1046,15 @@
       // Timeline UI
       elFill.style.width = (t / TOTAL * 100).toFixed(2) + '%';
       elTime.textContent = `${fmt(t)} / ${fmt(TOTAL)}`;
+
+      // Show/hide restart overlay
+      if (t >= TOTAL) {
+        elRestartOverlay.style.display = 'flex';
+        elPlay.style.display = 'none';
+      } else {
+        elRestartOverlay.style.display = 'none';
+        elPlay.style.display = 'block';
+      }
 
       // Hide all groups by default each frame (toggled below)
       starGroup.visible = false;
@@ -1323,7 +1461,6 @@
       renderer.render(scene, camera);
     }
 
-    clock.start();
     animate();
   </script>
 </body>
