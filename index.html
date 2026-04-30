@@ -466,18 +466,34 @@
     );
     starGroup.add(starCore);
 
-    // Glow layers
-    for (let i = 0; i < 4; i++) {
-      const r = 3.2 + i * 0.7;
-      const glow = new THREE.Mesh(
-        new THREE.SphereGeometry(r, 32, 32),
-        new THREE.MeshBasicMaterial({
-          color: new THREE.Color().setHSL(0.05 - i * 0.01, 1, 0.5),
-          transparent: true, opacity: 0.08 - i * 0.015, side: THREE.BackSide
-        })
-      );
-      starGroup.add(glow);
+    // Glow layers - matched to core collapse style for visual continuity
+    starGroup.add(new THREE.Mesh(
+      new THREE.SphereGeometry(3.4, 32, 32),
+      new THREE.MeshBasicMaterial({ color: 0xff5500, transparent: true, opacity: 0.15, side: THREE.BackSide })
+    ));
+    starGroup.add(new THREE.Mesh(
+      new THREE.SphereGeometry(9, 24, 24),
+      new THREE.MeshBasicMaterial({ color: 0xcc2200, transparent: true, opacity: 0.08, side: THREE.BackSide })
+    ));
+
+    // Volumetric Corona - procedural glow using points
+    const coronaGeo = new THREE.BufferGeometry();
+    const coronaCount = 2000;
+    const coronaPos = new Float32Array(coronaCount * 3);
+    for (let i = 0; i < coronaCount; i++) {
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos(2 * Math.random() - 1);
+      const r = 3 + Math.random() * 2.5;
+      coronaPos[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+      coronaPos[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
+      coronaPos[i * 3 + 2] = r * Math.cos(phi);
     }
+    coronaGeo.setAttribute('position', new THREE.BufferAttribute(coronaPos, 3));
+    const coronaMat = new THREE.PointsMaterial({
+      color: 0xffaa00, size: 0.15, transparent: true, opacity: 0.4, sizeAttenuation: true, blending: THREE.AdditiveBlending
+    });
+    const corona = new THREE.Points(coronaGeo, coronaMat);
+    starGroup.add(corona);
 
     const starLight = new THREE.PointLight(0xff5500, 3, 60);
     starGroup.add(starLight);
@@ -488,10 +504,10 @@
     atomGroup.visible = false;
 
     const atomGenerations = [
-      { name: 'He', color: 0xffdd44, size: 0.12, count: 32 },
-      { name: 'C', color: 0xaaaaaa, size: 0.18, count: 16 },
-      { name: 'Si', color: 0xffaa44, size: 0.26, count: 8 },
-      { name: 'Fe', color: 0xcc8844, size: 0.36, count: 4 },
+      { name: 'He', color: 0xffdd44, size: 0.12, count: 120 },
+      { name: 'C', color: 0xaaaaaa, size: 0.18, count: 60 },
+      { name: 'Si', color: 0xffaa44, size: 0.26, count: 30 },
+      { name: 'Fe', color: 0xcc8844, size: 0.36, count: 15 },
     ];
 
     const atomMeshes = [];
@@ -532,9 +548,10 @@
 
     // Plasma particle field — dense glowing specks filling the interior
     const plasmaGeo = new THREE.BufferGeometry();
-    const plasmaPos = new Float32Array(1200 * 3);
-    const plasmaCol = new Float32Array(1200 * 3);
-    for (let i = 0; i < 1200; i++) {
+    const plasmaCount = 3500;
+    const plasmaPos = new Float32Array(plasmaCount * 3);
+    const plasmaCol = new Float32Array(plasmaCount * 3);
+    for (let i = 0; i < plasmaCount; i++) {
       const theta = Math.random() * Math.PI * 2;
       const phi = Math.acos(2 * Math.random() - 1);
       const r = 0.8 + Math.random() * 7;
@@ -568,11 +585,11 @@
       new THREE.MeshBasicMaterial({ color: 0xcc2200, transparent: true, opacity: 0.07, side: THREE.BackSide })
     ));
 
-    // Iron core — dense, glowing ball
+    // Iron core — dense, glowing ball (colors matched to red supergiant core for continuity)
     const ironCore = new THREE.Mesh(
       new THREE.SphereGeometry(2.5, 48, 48),
       new THREE.MeshStandardMaterial({
-        color: 0xbb8855, emissive: 0xff4400, emissiveIntensity: 1.5, roughness: 0.85
+        color: 0xff4400, emissive: 0xcc2200, emissiveIntensity: 2.2, roughness: 0.85
       })
     );
     collapseGroup.add(ironCore);
@@ -582,6 +599,7 @@
       new THREE.SphereGeometry(3.4, 32, 32),
       new THREE.MeshBasicMaterial({ color: 0xff5500, transparent: true, opacity: 0.10, side: THREE.BackSide })
     ));
+
 
     // Implosion particles: start scattered, converge to centre as collapse progresses
     const IMPL_COUNT = 700;
@@ -1079,17 +1097,34 @@
         starCore.scale.setScalar(pulse);
         starLight.intensity = 2.5 + Math.sin(t * 2) * 0.5;
 
-        // Camera: zoom from z=14 toward z=1
-        if (t < 15) {
-          const st = t / 15;
+        // Camera: approach star by t=14, dive by t=17
+        if (t < 14) {
+          const st = t / 14;
           camPos.set(0, 0, lerp(14, 4, ease(st)));
-        } else {
-          // Scene 1: dive inside star (t=15-25)
-          atomGroup.visible = true;
-          const st = (t - 15) / 10;
+        } else if (t < 17) {
+          const st = (t - 14) / 3;
           camPos.set(0, 0, lerp(4, 0, ease(st)));
-          // Fade star: holds near full opacity for first ~3s, then eases to 0 by t=25
-          const fadeOpacity = clamp(1 - ease(clamp(st / 0.95, 0, 1)), 0, 1);
+        } else {
+          camPos.set(0, 0, 0); // Fully inside
+        }
+
+        if (t >= 14) {
+          // Scene 1: interior logic (t=14-25)
+          atomGroup.visible = true; // Show the red plasma background immediately
+          const interiorSt = clamp((t - 14) / 11, 0, 1);
+          
+          let atomSt = 0;
+          const ATOM_START = 18.5; 
+          if (t > ATOM_START) {
+            atomSt = (t - ATOM_START) / (25 - ATOM_START);
+          }
+          
+          // Rotate plasma field slowly
+          plasmaPoints.rotation.y += dt * 0.08;
+          plasmaPoints.rotation.x += dt * 0.03;
+
+          // Fade star: ensure it's fully gone when camera is inside
+          const fadeOpacity = clamp(1 - ((t - 14) / 3 * 2.5), 0, 1);
           starGroup.visible = fadeOpacity > 0.005;
           if (starGroup.visible) {
             starCore.material.transparent = true;
@@ -1098,13 +1133,10 @@
               if (c.material && c !== starCore) c.material.transparent = true;
             });
           }
-          // Rotate plasma field slowly for a churning effect
-          plasmaPoints.rotation.y += dt * 0.08;
-          plasmaPoints.rotation.x += dt * 0.03;
 
-          // Pulse the central light on each fusion event (when st crosses 0.25, 0.5, 0.75)
-          const cycleIntensity = Math.exp(-((st * 4) % 1) * 6);
-          atomLight.intensity = 2 + cycleIntensity * 4;
+          // Pulse the central light on each fusion event (using atomSt)
+          const cycleIntensity = Math.exp(-((atomSt * 4) % 1) * 6);
+          atomLight.intensity = (t > 22) ? (2 + cycleIntensity * 4) : 0;
 
           // Animate atoms orbiting, pairing up, and physically colliding to fuse
           atomMeshes.forEach(m => {
@@ -1112,7 +1144,7 @@
             const t0 = d.g * 0.25; // Start time for this generation
             const t1 = (d.g + 1) * 0.25; // End time
 
-            if (st >= t0 && st < t1) {
+            if (t > 18.5 && atomSt >= t0 && atomSt < t1) {
               m.visible = true;
               let scale = 1;
 
@@ -1125,14 +1157,14 @@
               );
 
               // Spawn phase (burst out)
-              if (d.g > 0 && st < t0 + 0.05) {
-                const spawnT = clamp((st - t0) / 0.05, 0, 1);
+              if (d.g > 0 && atomSt < t0 + 0.05) {
+                const spawnT = clamp((atomSt - t0) / 0.05, 0, 1);
                 scale = spawnT;
               }
 
               // Fuse phase (crash into sibling to form parent)
-              if (st > t1 - 0.08) {
-                const fuseT = clamp((st - (t1 - 0.08)) / 0.08, 0, 1);
+              if (atomSt > t1 - 0.08) {
+                const fuseT = clamp((atomSt - (t1 - 0.08)) / 0.08, 0, 1);
                 scale = 1 - fuseT;
 
                 if (d.g < 3) {
@@ -1168,8 +1200,7 @@
         collapseGroup.visible = true;
         const st = (t - 25) / 13;
 
-        // Atom group lingers briefly then fades
-        atomGroup.visible = st < 0.25;
+        // Atom group is now hidden immediately at t=25
 
         // Camera: pull back to z=9 immediately so the core is clearly visible
         // (scene 1 left camera near z=0, inside the sphere — fix that fast)
