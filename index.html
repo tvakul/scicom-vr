@@ -677,7 +677,7 @@
     scene.add(explodeGroup);
     explodeGroup.visible = false;
 
-    const EXPLODE_COUNT = 3000;
+    const EXPLODE_COUNT = 6000;
     const explodeGeo = new THREE.BufferGeometry();
     const explodePos = new Float32Array(EXPLODE_COUNT * 3);
     const explodeVel = new Float32Array(EXPLODE_COUNT * 3);
@@ -686,7 +686,7 @@
     for (let i = 0; i < EXPLODE_COUNT; i++) {
       const theta = Math.random() * Math.PI * 2;
       const phi = Math.acos(2 * Math.random() - 1);
-      const speed = 0.5 + Math.random() * 3;
+      const speed = 2.0 + Math.random() * 10;
       explodeVel[i * 3] = Math.sin(phi) * Math.cos(theta) * speed;
       explodeVel[i * 3 + 1] = Math.sin(phi) * Math.sin(theta) * speed;
       explodeVel[i * 3 + 2] = Math.cos(phi) * speed;
@@ -698,7 +698,7 @@
     }
     explodeGeo.setAttribute('position', new THREE.BufferAttribute(explodePos.slice(), 3));
     explodeGeo.setAttribute('color', new THREE.BufferAttribute(explodeCol, 3));
-    const explodeMat = new THREE.PointsMaterial({ size: 0.12, vertexColors: true, sizeAttenuation: true, transparent: true, opacity: 1 });
+    const explodeMat = new THREE.PointsMaterial({ size: 0.2, vertexColors: true, sizeAttenuation: true, transparent: true, opacity: 1 });
     const explodeParticles = new THREE.Points(explodeGeo, explodeMat);
     explodeGroup.add(explodeParticles);
 
@@ -1176,6 +1176,7 @@
       elLigo.style.opacity = '0';
       elET.style.opacity = '0';
       elFadeBlack.style.opacity = '0';
+      elFlash.style.opacity = '0';
       earthSunLight.intensity = 0;
       scene.background = null; 
       stars.visible = true; 
@@ -1349,10 +1350,17 @@
         // Core light: bright while collapsing, dims as it vanishes
         collapseLight.intensity = lerp(4, 0, ease(collapsePhase));
 
-        // 1-second blackout just before scene 3
-        const darkness = clamp((t - 35.5) * 4, 0, 1) * clamp((38 - t) * 4, 0, 1);
-        elFlash.style.background = '#000';
-        elFlash.style.opacity = (darkness * 0.99).toFixed(2);
+        // Pitch black for 1.0s before 38.0s (Supernova)
+        if (t >= 36.5) {
+          const darkness = clamp((t - 36.5) * 2, 0, 1); // Fades to black between 36.5 and 37.0
+          elFlash.style.background = '#000';
+          elFlash.style.opacity = darkness.toFixed(2);
+          
+          if (t >= 37.0) {
+            collapseGroup.visible = false;
+            stars.visible = false;
+          }
+        }
       }
 
       /* ── Scene 3: Supernova (38-55s) ─────────────────────────────── */
@@ -1373,7 +1381,7 @@
         const posAttr = explodeParticles.geometry.getAttribute('position');
         for (let i = 0; i < EXPLODE_COUNT; i++) {
           const vx = explodeVel[i * 3], vy = explodeVel[i * 3 + 1], vz = explodeVel[i * 3 + 2];
-          const drag = Math.exp(-explodeT * 0.3);
+          const drag = Math.exp(-explodeT * 0.15);
           posAttr.array[i * 3] = vx * explodeT * drag;
           posAttr.array[i * 3 + 1] = vy * explodeT * drag;
           posAttr.array[i * 3 + 2] = vz * explodeT * drag;
