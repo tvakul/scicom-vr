@@ -1680,23 +1680,25 @@
           );
         }
 
-        // Animate Gravitational Waves hitting
+        // Animate Gravitational Waves hitting (repeating waves)
         const localT = t - 140;
+        const waveCycle = 4.0; // New wave every 4 seconds
         gwRings.forEach((ring, i) => {
-          const delay = i * 0.5;
+          const delay = i * 0.6;
+          const cycleT = ((localT - delay) % waveCycle + waveCycle) % waveCycle;
           if (localT > delay) {
-            const wt = localT - delay;
-            // Waves expand outwards and downwards
+            const wt = cycleT;
+            // Waves descend from above
             const radius = 1 + wt * 30;
-            const yPos = 50 - wt * 20;
+            const yPos = 50 - wt * 18;
             ring.scale.setScalar(radius);
             ring.position.y = yPos;
 
             // Pulse opacity
-            ring.material.opacity = clamp(1 - wt / 3, 0, 0.4);
+            ring.material.opacity = clamp(Math.sin((wt / waveCycle) * Math.PI) * 0.4, 0, 0.4);
 
-            // Disturb lasers when wave passes through surface/telescope
-            if (yPos < 12 && yPos > -15) {
+            // Disturb lasers ONLY when wave passes through telescope depth (hubs at y=-20)
+            if (yPos < -15 && yPos > -35) {
               etLasers.forEach(l => {
                 l.userData.disturbance = 1.0;
               });
@@ -1704,15 +1706,14 @@
           }
         });
 
-        // Decay laser flash
+        // Laser state: flicker briefly on hit, then snap back to normal
         etLasers.forEach(l => {
           if (l.userData.disturbance > 0) {
-            // Disturbed state: flicker and bulge
             const d = l.userData.disturbance;
             l.material.opacity = 0.5 + Math.random() * 0.5;
             l.scale.set(1 + Math.random() * d * 3, 1, 1 + Math.random() * d * 3);
             l.material.color.setHex(Math.random() > 0.5 ? 0xffffff : 0xcc00ff);
-            l.userData.disturbance = Math.max(0, d - dt * 2.0);
+            l.userData.disturbance = Math.max(0, d - dt * 5.0); // Fast decay
           } else {
             // Normal state
             l.material.opacity = 0.9;
@@ -1727,14 +1728,39 @@
         waveformGroup.visible = true;
         const st = (t - 155) / 15;
 
-        // Build waveform — chirp signal (like GW detection)
+        // Build waveform — realistic GW chirp: inspiral → merger → ringdown
         const wfPos = wfGeo.getAttribute('position');
+        const mergerPoint = 0.75; // merger happens at 75% of the waveform
         for (let i = 0; i < WF_POINTS; i++) {
           const x = (i / WF_POINTS - 0.5) * 9;
           const phase = i / WF_POINTS;
-          const chirpFreq = 1 + phase * 12;
-          const chirpAmp = phase < st ? Math.exp(-Math.pow((phase - st) * 6, 2)) * 0.8 * Math.min(st * 3, 1) : 0;
-          const y = Math.sin(phase * chirpFreq * Math.PI * 20) * chirpAmp;
+
+          let y = 0;
+          const revealed = phase < st; // Only draw up to current time
+
+          if (revealed) {
+            if (phase < mergerPoint) {
+              // INSPIRAL: frequency and amplitude increase as merger approaches
+              const inspP = phase / mergerPoint; // 0 to 1
+              const tau = 1 - inspP; // time to merger (decreases)
+              const freq = 2 + 40 * Math.pow(inspP, 3); // frequency ramps up cubically
+              const amp = 0.15 + 0.65 * Math.pow(inspP, 2.5); // amplitude grows
+              y = Math.sin(freq * phase * Math.PI * 2) * amp;
+            } else if (phase < mergerPoint + 0.03) {
+              // MERGER: brief high-amplitude burst
+              const mergerP = (phase - mergerPoint) / 0.03;
+              const freq = 42 + mergerP * 10;
+              const amp = 0.8 * (1 - mergerP * 0.3);
+              y = Math.sin(freq * phase * Math.PI * 2) * amp;
+            } else {
+              // RINGDOWN: exponentially damped sinusoid
+              const ringP = (phase - mergerPoint - 0.03) / (1 - mergerPoint - 0.03);
+              const decay = Math.exp(-ringP * 8);
+              const freq = 50;
+              y = Math.sin(freq * phase * Math.PI * 2) * 0.55 * decay;
+            }
+          }
+
           wfPos.array[i * 3] = x;
           wfPos.array[i * 3 + 1] = y;
           wfPos.array[i * 3 + 2] = 0;
