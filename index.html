@@ -464,17 +464,22 @@
         roughness: 0.8, metalness: 0
       })
     );
+    starCore.userData.baseOpacity = 1;
     starGroup.add(starCore);
 
-    // Glow layers - matched to core collapse style for visual continuity
-    starGroup.add(new THREE.Mesh(
+    const glow1 = new THREE.Mesh(
       new THREE.SphereGeometry(3.4, 32, 32),
       new THREE.MeshBasicMaterial({ color: 0xff5500, transparent: true, opacity: 0.15, side: THREE.BackSide })
-    ));
-    starGroup.add(new THREE.Mesh(
+    );
+    glow1.userData.baseOpacity = 0.15;
+    starGroup.add(glow1);
+
+    const glow2 = new THREE.Mesh(
       new THREE.SphereGeometry(9, 24, 24),
       new THREE.MeshBasicMaterial({ color: 0xcc2200, transparent: true, opacity: 0.08, side: THREE.BackSide })
-    ));
+    );
+    glow2.userData.baseOpacity = 0.08;
+    starGroup.add(glow2);
 
     // Volumetric Corona - procedural glow using points
     const coronaGeo = new THREE.BufferGeometry();
@@ -493,6 +498,7 @@
       color: 0xffaa00, size: 0.15, transparent: true, opacity: 0.4, sizeAttenuation: true, blending: THREE.AdditiveBlending
     });
     const corona = new THREE.Points(coronaGeo, coronaMat);
+    corona.userData.baseOpacity = 0.4;
     starGroup.add(corona);
 
     const starLight = new THREE.PointLight(0xff5500, 3, 60);
@@ -1074,6 +1080,30 @@
         elPlay.style.display = 'block';
       }
 
+      // Reset popups and overlays
+      elLigo.style.opacity = '0';
+      elET.style.opacity = '0';
+      elFadeBlack.style.opacity = '0';
+      earthSunLight.intensity = 0;
+      scene.background = null; 
+      stars.visible = true; 
+
+      // Reset star material (in case of rewind)
+      starGroup.children.forEach(c => {
+        if (c.material) {
+          c.material.transparent = (c.userData.baseOpacity < 1);
+          c.material.opacity = c.userData.baseOpacity || 1;
+        }
+      });
+      
+      // Reset ET lasers
+      etLasers.forEach(l => {
+        l.material.opacity = 0.9;
+        l.scale.setScalar(1);
+        l.material.color.setHex(0xcc00ff);
+        l.userData.disturbance = 0;
+      });
+
       // Hide all groups by default each frame (toggled below)
       starGroup.visible = false;
       atomGroup.visible = false;
@@ -1084,11 +1114,6 @@
       earthGroup.visible = false;
       etGroup.visible = false;
       waveformGroup.visible = false;
-      elLigo.style.opacity = '0';
-      elET.style.opacity = '0';
-      earthSunLight.intensity = 0;
-      scene.background = null; // Reset background to black
-      stars.visible = true; // Show stars by default
 
       /* ── Scene 0: Red supergiant (0-25s) ─────────────────────────── */
       if (t < 25) {
@@ -1114,9 +1139,11 @@
           const interiorSt = clamp((t - 14) / 11, 0, 1);
           
           let atomSt = 0;
-          const ATOM_START = 18.5; 
-          if (t > ATOM_START) {
-            atomSt = (t - ATOM_START) / (25 - ATOM_START);
+          const FUSE_START = 17;
+          if (t >= 15.75) {
+            if (t > FUSE_START) {
+              atomSt = (t - FUSE_START) / (25 - FUSE_START);
+            }
           }
           
           // Rotate plasma field slowly
@@ -1127,10 +1154,11 @@
           const fadeOpacity = clamp(1 - ((t - 14) / 3 * 2.5), 0, 1);
           starGroup.visible = fadeOpacity > 0.005;
           if (starGroup.visible) {
-            starCore.material.transparent = true;
-            starCore.material.opacity = fadeOpacity;
             starGroup.children.forEach(c => {
-              if (c.material && c !== starCore) c.material.transparent = true;
+              if (c.material) {
+                c.material.transparent = true;
+                c.material.opacity = (c === starCore) ? fadeOpacity : (fadeOpacity * (c.userData.baseOpacity || 1));
+              }
             });
           }
 
@@ -1144,7 +1172,7 @@
             const t0 = d.g * 0.25; // Start time for this generation
             const t1 = (d.g + 1) * 0.25; // End time
 
-            if (t > 18.5 && atomSt >= t0 && atomSt < t1) {
+            if (t >= 15.75 && atomSt >= t0 && atomSt < t1) {
               m.visible = true;
               let scale = 1;
 
