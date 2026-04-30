@@ -284,14 +284,19 @@
   <div id="start-overlay">
     <h1 class="start-title">SUPERNOVA</h1>
     <button id="start-btn" aria-label="Start Experience">
-      <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+      <svg viewBox="0 0 24 24">
+        <path d="M8 5v14l11-7z" />
+      </svg>
     </button>
   </div>
 
   <div id="restart-overlay">
     <h1 class="start-title">THE END</h1>
     <button id="restart-btn" aria-label="Restart Experience">
-      <svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+      <svg viewBox="0 0 24 24">
+        <path
+          d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" />
+      </svg>
     </button>
   </div>
   <div id="scene-label">SUPERNOVA</div>
@@ -302,7 +307,8 @@
     <p>First detected gravitational waves in 2015.<br>
       Arms: 4 km. Locations: Hanford WA & Livingston LA.<br>
       Has never detected waves from a supernova.</p>
-    <img src="https://en.wikipedia.org/wiki/Special:FilePath/LIGO_Hanford_aerial_05.jpg" style="width: 100%; border-radius: 8px; margin-top: 12px; border: 1px solid rgba(255,255,255,0.2);">
+    <img src="https://en.wikipedia.org/wiki/Special:FilePath/LIGO_Hanford_aerial_05.jpg"
+      style="width: 100%; border-radius: 8px; margin-top: 12px; border: 1px solid rgba(255,255,255,0.2);">
   </div>
 
   <div id="et-popup">
@@ -453,34 +459,34 @@
     scene.add(stars);
 
     function makeGalaxy(options = {}) {
-      const { 
-        count = 2000, 
-        color = 0xffffff, 
-        size = 0.08, 
-        radius = 8, 
-        arms = 3, 
-        twist = 2.5 
+      const {
+        count = 2000,
+        color = 0xffffff,
+        size = 0.08,
+        radius = 8,
+        arms = 3,
+        twist = 2.5
       } = options;
-      
+
       const geo = new THREE.BufferGeometry();
       const pos = new Float32Array(count * 3);
       const colors = new Float32Array(count * 3);
       const baseCol = new THREE.Color(color);
-      
+
       for (let i = 0; i < count; i++) {
         const r = Math.pow(Math.random(), 1.5) * radius;
         const armAngle = (i % arms) * (Math.PI * 2 / arms);
         const twistAngle = r * (twist / radius) * 4;
         const angle = armAngle + twistAngle;
-        
+
         const randomX = (Math.pow(Math.random(), 3) * (Math.random() < 0.5 ? 1 : -1) * 0.8);
         const randomY = (Math.pow(Math.random(), 3) * (Math.random() < 0.5 ? 1 : -1) * 0.4);
         const randomZ = (Math.pow(Math.random(), 3) * (Math.random() < 0.5 ? 1 : -1) * 0.8);
-        
+
         pos[i * 3] = Math.cos(angle) * r + randomX;
         pos[i * 3 + 1] = randomY;
         pos[i * 3 + 2] = Math.sin(angle) * r + randomZ;
-        
+
         const mixed = baseCol.clone().lerp(new THREE.Color(0xffffff), 1 - r / radius);
         colors[i * 3] = mixed.r;
         colors[i * 3 + 1] = mixed.g;
@@ -488,10 +494,10 @@
       }
       geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
       geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-      
-      const mat = new THREE.PointsMaterial({ 
-        size, vertexColors: true, transparent: true, opacity: 0.6, 
-        sizeAttenuation: true, blending: THREE.AdditiveBlending 
+
+      const mat = new THREE.PointsMaterial({
+        size, vertexColors: true, transparent: true, opacity: 0.6,
+        sizeAttenuation: true, blending: THREE.AdditiveBlending
       });
       return new THREE.Points(geo, mat);
     }
@@ -791,23 +797,23 @@
 
     const PLANET_DEFS = [
       { name: 'Neptune', x: -18, y: 8, z: -10, r: 1.5, tex: 'neptunemap.jpg', col: 0x4466ff },
-      { name: 'Uranus',  x: 16, y: -6, z: -20, r: 1.4, tex: 'uranusmap.jpg', col: 0x88ccff },
-      { name: 'Saturn',  x: -22, y: -4, z: -32, r: 2.2, tex: 'saturnmap.jpg', col: 0xeeddaa, hasRings: true },
+      { name: 'Uranus', x: 16, y: -6, z: -20, r: 1.4, tex: 'uranusmap.jpg', col: 0x88ccff },
+      { name: 'Saturn', x: -22, y: -4, z: -32, r: 2.2, tex: 'saturnmap.jpg', col: 0xeeddaa, hasRings: true },
       { name: 'Jupiter', x: 20, y: 7, z: -45, r: 2.8, tex: 'jupitermap.jpg', col: 0xffccaa },
-      { name: 'Mars',    x: -12, y: -3, z: -55, r: 0.8, tex: 'marsmap1k.jpg', col: 0xff5522 },
-      { name: 'Venus',   x: 10, y: 2, z: -62, r: 1.1, tex: 'venusmap.jpg', col: 0xffcc88 },
+      { name: 'Mars', x: -12, y: -3, z: -55, r: 0.8, tex: 'marsmap1k.jpg', col: 0xff5522 },
+      { name: 'Venus', x: 10, y: 2, z: -62, r: 1.1, tex: 'venusmap.jpg', col: 0xffcc88 },
     ];
 
     const travelPlanetMeshes = [];
     PLANET_DEFS.forEach(def => {
       const col = new THREE.Color(def.col);
-      const matOptions = { 
-        color: 0xffffff, 
-        emissive: col, 
-        emissiveIntensity: 0.05, 
-        roughness: 0.8 
+      const matOptions = {
+        color: 0xffffff,
+        emissive: col,
+        emissiveIntensity: 0.05,
+        roughness: 0.8
       };
-      
+
       if (def.tex) {
         matOptions.map = texLoader.load(TEX_BASE + def.tex);
       } else {
@@ -935,108 +941,151 @@
     scene.add(etGroup);
     etGroup.visible = false;
 
-    // 1. Earth Chunk (Semi-transparent diorama block)
-    const earthGeo = new THREE.BoxGeometry(250, 10, 250);
+    // 1. Earth Chunk (Green landscape diorama)
+    const earthGeo = new THREE.BoxGeometry(180, 12, 300);
     const earthMats = [
-      new THREE.MeshStandardMaterial({ color: 0xebe8d7, transparent: true, opacity: 0.1, depthWrite: false }), // right
-      new THREE.MeshStandardMaterial({ color: 0xebe8d7, transparent: true, opacity: 0.1, depthWrite: false }), // left
-      new THREE.MeshStandardMaterial({ color: 0xc8d6b8, transparent: true, opacity: 0.25, roughness: 1 }),    // top (landscape)
-      new THREE.MeshStandardMaterial({ color: 0xebe8d7, transparent: true, opacity: 0.1, depthWrite: false }), // bottom
-      new THREE.MeshStandardMaterial({ color: 0xe0d6bc, transparent: true, opacity: 0.2, roughness: 1 }),    // front
-      new THREE.MeshStandardMaterial({ color: 0xebe8d7, transparent: true, opacity: 0.1, depthWrite: false }), // back
+      new THREE.MeshStandardMaterial({ color: 0x8d6e63, transparent: true, opacity: 0.4, depthWrite: false }), // right
+      new THREE.MeshStandardMaterial({ color: 0x8d6e63, transparent: true, opacity: 0.4, depthWrite: false }), // left
+      new THREE.MeshStandardMaterial({ color: 0x4caf50, transparent: true, opacity: 0.6, roughness: 1, depthWrite: false }),    // top (green grass)
+      new THREE.MeshStandardMaterial({ color: 0x8d6e63, transparent: true, opacity: 0.2, depthWrite: false }), // bottom
+      new THREE.MeshStandardMaterial({ color: 0x8d6e63, transparent: true, opacity: 0.5, roughness: 1, depthWrite: false }),    // front
+      new THREE.MeshStandardMaterial({ color: 0x8d6e63, transparent: true, opacity: 0.2, depthWrite: false }), // back
     ];
     const earthChunk = new THREE.Mesh(earthGeo, earthMats);
-    earthChunk.position.set(0, 5, 0); 
+    earthChunk.position.set(0, 4, 20);
+    earthChunk.renderOrder = 0;
     etGroup.add(earthChunk);
 
     // 2. Einstein Telescope Facility
     const TV = [
-      new THREE.Vector3(0, -18, 35),    // Foreground station
-      new THREE.Vector3(-45, -18, -35), // Back left
-      new THREE.Vector3(45, -18, -35)   // Back right
+      new THREE.Vector3(0, -20, 45),    // Hub 1
+      new THREE.Vector3(-55, -20, -45), // Hub 2
+      new THREE.Vector3(55, -20, -45)   // Hub 3
     ];
 
-    // Hubs (Excavated Chambers)
+    const hubMatOpaque = new THREE.MeshStandardMaterial({ color: 0xfafafa, roughness: 0.6 });
+    const hubMatTrans = new THREE.MeshStandardMaterial({
+      color: 0xb8c4cc,
+      roughness: 0.4,
+      metalness: 0.15,
+      transparent: true,
+      opacity: 0.32,
+      side: THREE.DoubleSide,
+      depthWrite: false
+    });
+    const towerColors = [0xee3333, 0x3366cc, 0xcccccc];
+
     TV.forEach((v, i) => {
-      // Chamber room (hollowed out for cross-section)
-      const hubGeo = new THREE.BoxGeometry(20, 12, 20);
-      const hubMat = new THREE.MeshStandardMaterial({ color: 0xffffff, side: THREE.BackSide, roughness: 1 });
-      const hub = new THREE.Mesh(hubGeo, hubMat);
+      const isTrans = (i === 0); // Only the foreground hub is transparent
+      const m = isTrans ? hubMatTrans : hubMatOpaque;
+
+      // Main Hub (Cylinder + Dome)
+      const r = (i === 0) ? 12 : 9;
+      const h = (i === 0) ? 18 : 14;
+
+      const hub = new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, 32), m);
       hub.position.copy(v);
       etGroup.add(hub);
 
-      // Internal machinery (Colorful Towers)
-      const towerColors = [0xee3333, 0x3366cc, 0xcccccc]; // Red, Blue, Silver
-      const towerCount = 6;
+      const dome = new THREE.Mesh(new THREE.SphereGeometry(r, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2), m);
+      dome.position.set(v.x, v.y + h / 2, v.z);
+      etGroup.add(dome);
+
+      // Side Chamber (smaller cylinder)
+      const sr = r * 0.7;
+      const sh = h * 0.8;
+      const side = new THREE.Mesh(new THREE.CylinderGeometry(sr, sr, sh, 24), m);
+      side.position.set(v.x + r * 1.1, v.y - (h - sh) / 2, v.z + r * 0.5);
+      etGroup.add(side);
+
+      const sDome = new THREE.Mesh(new THREE.SphereGeometry(sr, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2), m);
+      sDome.position.set(side.position.x, side.position.y + sh / 2, side.position.z);
+      if (isTrans) {
+        hub.renderOrder = 10;
+        dome.renderOrder = 10;
+        side.renderOrder = 10;
+        sDome.renderOrder = 10;
+      }
+      etGroup.add(sDome);
+
+      // Vertical Shaft to surface
+      const shaftTopY = 10;
+      const hubTopY = v.y + h / 2;
+      const sLen = shaftTopY - hubTopY;
+      const shaft = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.6, r * 0.6, sLen, 32), m);
+      shaft.position.set(v.x, hubTopY + sLen / 2, v.z);
+      if (isTrans) shaft.renderOrder = 10;
+      etGroup.add(shaft);
+
+      // Surface entrance island
+      const island = new THREE.Mesh(
+        new THREE.CylinderGeometry(r * 1.2, r * 1.2, 0.2, 32),
+        new THREE.MeshStandardMaterial({ color: 0x6b8e23 })
+      );
+      island.position.set(v.x, 10.1, v.z);
+      etGroup.add(island);
+
+      // Internal machinery (Colorful Towers) - Always opaque
+      const towerCount = (i === 0) ? 8 : 5;
       for (let j = 0; j < towerCount; j++) {
-        const h = 5 + Math.random() * 5;
+        const th = 4 + Math.random() * 6;
         const tower = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.8, 0.8, h, 16),
-          new THREE.MeshStandardMaterial({ color: towerColors[j % 3], metalness: 0.6, roughness: 0.3 })
+          new THREE.CylinderGeometry(0.6, 0.6, th, 16),
+          new THREE.MeshStandardMaterial({ color: towerColors[j % 3], metalness: 0.5, roughness: 0.3 })
         );
         tower.position.set(
-          v.x + (j % 3 - 1) * 4 + (Math.random()-0.5)*1,
-          v.y - 6 + h / 2,
-          v.z + (Math.floor(j/3) - 0.5) * 6 + (Math.random()-0.5)*1
+          v.x + (Math.random() - 0.5) * (r * 1.4),
+          v.y - h / 2 + th / 2 + 0.5,
+          v.z + (Math.random() - 0.5) * (r * 1.4)
         );
+        if (i === 0) tower.renderOrder = 5;
         etGroup.add(tower);
-        
-        const base = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.5, 2.5), new THREE.MeshStandardMaterial({ color: 0x444444 }));
-        base.position.set(tower.position.x, v.y - 5.8, tower.position.z);
+
+        const base = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.5, 1.5), new THREE.MeshStandardMaterial({ color: 0x444444 }));
+        base.position.set(tower.position.x, v.y - h / 2 + 0.25, tower.position.z);
+        if (i === 0) base.renderOrder = 5;
         etGroup.add(base);
       }
 
       // Hub lights
-      const hubLight = new THREE.PointLight(0xffffff, 15, 50);
-      hubLight.position.set(v.x, v.y + 4, v.z);
+      const hubLight = new THREE.PointLight(0xffffff, 20, 60);
+      hubLight.position.set(v.x, v.y + 2, v.z);
       etGroup.add(hubLight);
-
-      // Add access shaft for the foreground station
-      if (i === 0) {
-        const shaftLen = 28;
-        const shaft = new THREE.Mesh(
-          new THREE.CylinderGeometry(1.2, 1.2, shaftLen, 16),
-          new THREE.MeshStandardMaterial({ color: 0xcccccc })
-        );
-        shaft.position.copy(v);
-        shaft.position.y += shaftLen / 2 - 6;
-        etGroup.add(shaft);
-
-        const island = new THREE.Mesh(
-          new THREE.CylinderGeometry(15, 15, 1, 32),
-          new THREE.MeshStandardMaterial({ color: 0x6b8e23 })
-        );
-        island.position.copy(v);
-        island.position.y += shaftLen - 6; 
-        etGroup.add(island);
-      }
     });
 
     const etLasers = [];
     const projPoints = [];
 
     // Arms, Tunnels, and Lasers
+    const tunnelMatOpaque = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4 });
+    const tunnelMatTrans = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.3,
+      side: THREE.DoubleSide,
+      depthWrite: false
+    });
+
     for (let i = 0; i < 3; i++) {
       const a = TV[i];
       const b = TV[(i + 1) % 3];
-      projPoints.push(new THREE.Vector3(a.x, 10.2, a.z)); 
+      projPoints.push(new THREE.Vector3(a.x, 10.2, a.z));
 
       const dir = b.clone().sub(a);
       const len = dir.length();
       const mid = a.clone().add(b).multiplyScalar(0.5);
-      
-      // Tunnel (large vacuum pipes)
-      const tunnel = new THREE.Mesh(
-        new THREE.CylinderGeometry(1.5, 1.5, len, 16, 1, true),
-        new THREE.MeshStandardMaterial({ color: 0xcccccc, side: THREE.BackSide })
-      );
+
+      // Select tunnel material (Only the right-side tunnel is transparent)
+      const tm = (i === 2) ? tunnelMatTrans : tunnelMatOpaque;
+
+      const tunnel = new THREE.Mesh(new THREE.CylinderGeometry(2.0, 2.0, len, 24, 1, true), tm);
       tunnel.position.copy(mid);
       tunnel.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize());
       etGroup.add(tunnel);
 
-      // Laser Beam
+      // Laser Beam (Visible inside the pipe)
       const laser = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.3, 0.3, len, 8),
+        new THREE.CylinderGeometry(0.35, 0.35, len, 8),
         new THREE.MeshBasicMaterial({ color: 0xcc00ff, transparent: true, opacity: 0.9 })
       );
       laser.position.copy(mid);
@@ -1055,7 +1104,7 @@
       projGeo.computeVertexNormals();
       const projPlane = new THREE.Mesh(
         projGeo,
-        new THREE.MeshBasicMaterial({ color: 0xcc00ff, transparent: true, opacity: 0.15, side: THREE.DoubleSide, depthWrite: false })
+        new THREE.MeshBasicMaterial({ color: 0xcc00ff, transparent: true, opacity: 0.1, side: THREE.DoubleSide, depthWrite: false })
       );
       etGroup.add(projPlane);
     }
@@ -1085,7 +1134,7 @@
     for (let i = 0; i < 6; i++) {
       const ring = new THREE.Mesh(
         new THREE.TorusGeometry(1, 0.4, 16, 100),
-        new THREE.MeshBasicMaterial({ color: 0xaaaaaa, transparent: true, opacity: 0 })
+        new THREE.MeshBasicMaterial({ color: 0xaaaaaa, transparent: true, opacity: 0, depthWrite: false })
       );
       ring.rotation.x = Math.PI / 2;
       etGroup.add(ring);
@@ -1191,8 +1240,8 @@
       elFadeBlack.style.opacity = '0';
       elFlash.style.opacity = '0';
       earthSunLight.intensity = 0;
-      scene.background = null; 
-      stars.visible = true; 
+      scene.background = null;
+      stars.visible = true;
 
       // Reset star material (in case of rewind)
       starGroup.children.forEach(c => {
@@ -1201,7 +1250,7 @@
           c.material.opacity = c.userData.baseOpacity || 1;
         }
       });
-      
+
       // Reset ET lasers
       etLasers.forEach(l => {
         l.material.opacity = 0.9;
@@ -1220,10 +1269,10 @@
       earthGroup.visible = false;
       etGroup.visible = false;
       waveformGroup.visible = false;
-      
+
       // Reset supernova opacity
       explodeParticles.material.opacity = 1;
-      
+
       // Reset grid opacity
       if (gridMat.uniforms.uOpacity) gridMat.uniforms.uOpacity.value = 1.0;
 
@@ -1249,7 +1298,7 @@
           // Scene 1: interior logic (t=14-25)
           atomGroup.visible = true; // Show the red plasma background immediately
           const interiorSt = clamp((t - 14) / 11, 0, 1);
-          
+
           let atomSt = 0;
           const FUSE_START = 17;
           if (t >= 15.75) {
@@ -1257,7 +1306,7 @@
               atomSt = (t - FUSE_START) / (25 - FUSE_START);
             }
           }
-          
+
           // Rotate plasma field slowly
           plasmaPoints.rotation.y += dt * 0.08;
           plasmaPoints.rotation.x += dt * 0.03;
@@ -1368,7 +1417,7 @@
           const darkness = clamp((t - 36.5) * 2, 0, 1); // Fades to black between 36.5 and 37.0
           elFlash.style.background = '#000';
           elFlash.style.opacity = darkness.toFixed(2);
-          
+
           if (t >= 37.0) {
             collapseGroup.visible = false;
             stars.visible = false;
@@ -1449,7 +1498,7 @@
         // Custom interpolation: stationary until 88, then move. 
         // Passes z=0 (neutron star) around t=91.5s
         const zPos = (t < 88) ? 5 : lerp(5, -65, Math.pow(movementSt, 1.2));
-        
+
         camPos.set(
           Math.sin(movementSt * Math.PI) * 3,
           lerp(2, 1, movementSt),
@@ -1459,7 +1508,7 @@
         // 3. Visibility logic
         gridGroup.visible = (zPos > -1); // Hide once we pass the neutron star
         travelGroup.visible = (zPos < 4); // Show travel scene elements as we approach them
-        
+
         // Planet reveal fade (starts around the time we pass the star)
         const planetReveal = sceneT(91, 95, t);
 
@@ -1536,12 +1585,12 @@
         earthGWRings.forEach((ring, i) => {
           const delay = i * 0.6;
           if (localT > delay) {
-            const wt = (localT - delay) % 4.0; 
+            const wt = (localT - delay) % 4.0;
             const progress = wt / 4.0; // 0 to 1
             // Constant massive radius: behaves like a plane wave from a distant source
-            ring.scale.setScalar(40); 
+            ring.scale.setScalar(40);
             // Travel from deep space (behind camera) past the Earth
-            ring.position.z = lerp(-120, 40, progress); 
+            ring.position.z = lerp(-120, 40, progress);
             ring.material.opacity = clamp(Math.sin(progress * Math.PI) * 0.25, 0, 0.25);
           } else {
             ring.material.opacity = 0;
@@ -1573,8 +1622,8 @@
         elFlash.style.opacity = (clamp(st * 4 - 3, 0, 1)).toFixed(2);
       }
 
-      /* ── Scene 8: Einstein Telescope (140-155s) ─────────────────── */
-      if (t >= 140 && t < 155) {
+      /* ── Scene 8 & 9: Einstein Telescope & Waveform (140s+) ─────── */
+      if (t >= 140) {
         etGroup.visible = true;
         stars.visible = false; // Hide stars since background is diagram beige
         scene.background = new THREE.Color(0xebe8d7); // Beige diagram background
