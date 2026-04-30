@@ -452,6 +452,50 @@
     const stars = makeStarField();
     scene.add(stars);
 
+    function makeGalaxy(options = {}) {
+      const { 
+        count = 2000, 
+        color = 0xffffff, 
+        size = 0.08, 
+        radius = 8, 
+        arms = 3, 
+        twist = 2.5 
+      } = options;
+      
+      const geo = new THREE.BufferGeometry();
+      const pos = new Float32Array(count * 3);
+      const colors = new Float32Array(count * 3);
+      const baseCol = new THREE.Color(color);
+      
+      for (let i = 0; i < count; i++) {
+        const r = Math.pow(Math.random(), 1.5) * radius;
+        const armAngle = (i % arms) * (Math.PI * 2 / arms);
+        const twistAngle = r * (twist / radius) * 4;
+        const angle = armAngle + twistAngle;
+        
+        const randomX = (Math.pow(Math.random(), 3) * (Math.random() < 0.5 ? 1 : -1) * 0.8);
+        const randomY = (Math.pow(Math.random(), 3) * (Math.random() < 0.5 ? 1 : -1) * 0.4);
+        const randomZ = (Math.pow(Math.random(), 3) * (Math.random() < 0.5 ? 1 : -1) * 0.8);
+        
+        pos[i * 3] = Math.cos(angle) * r + randomX;
+        pos[i * 3 + 1] = randomY;
+        pos[i * 3 + 2] = Math.sin(angle) * r + randomZ;
+        
+        const mixed = baseCol.clone().lerp(new THREE.Color(0xffffff), 1 - r / radius);
+        colors[i * 3] = mixed.r;
+        colors[i * 3 + 1] = mixed.g;
+        colors[i * 3 + 2] = mixed.b;
+      }
+      geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+      geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+      
+      const mat = new THREE.PointsMaterial({ 
+        size, vertexColors: true, transparent: true, opacity: 0.6, 
+        sizeAttenuation: true, blending: THREE.AdditiveBlending 
+      });
+      return new THREE.Points(geo, mat);
+    }
+
     /* ─── Scene 0: Red supergiant ───────────────────────────────────────────── */
     const starGroup = new THREE.Group();
     scene.add(starGroup);
@@ -737,36 +781,59 @@
     gridGroup.add(nsGrid);
     gridGroup.add(nsGridLight);
 
+    const texLoader = new THREE.TextureLoader();
+    const TEX_BASE = 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r160/examples/textures/planets/';
+
     /* ─── Scene 5: Waves travel through planets ─────────────────────────────── */
     const travelGroup = new THREE.Group();
     scene.add(travelGroup);
     travelGroup.visible = false;
 
     const PLANET_DEFS = [
-      { x: -4, y: 2, z: -8, r: 0.6, col: 0xff5522 },
-      { x: -2, y: -3, z: -12, r: 0.4, col: 0xaaaaaa, noCorona: true },
-      { x: 7, y: -2, z: -18, r: 1.3, col: 0xddaa44 },
-      { x: 5, y: 4, z: -25, r: 0.9, col: 0x55aa55, noCorona: true },
-      { x: -7, y: 3, z: -29, r: 0.5, col: 0x88bbdd },
-      { x: 4, y: -1, z: -39, r: 1.8, col: 0xcc8833 },
-      { x: -8, y: -2, z: -45, r: 1.1, col: 0x8844ff, noCorona: true },
-      { x: -5, y: 1, z: -49, r: 0.7, col: 0x6688ff },
-      { x: 6, y: 0, z: -58, r: 1.0, col: 0xff9966 },
+      { name: 'Neptune', x: -18, y: 8, z: -10, r: 1.5, tex: 'neptunemap.jpg', col: 0x4466ff },
+      { name: 'Uranus',  x: 16, y: -6, z: -20, r: 1.4, tex: 'uranusmap.jpg', col: 0x88ccff },
+      { name: 'Saturn',  x: -22, y: -4, z: -32, r: 2.2, tex: 'saturnmap.jpg', col: 0xeeddaa, hasRings: true },
+      { name: 'Jupiter', x: 20, y: 7, z: -45, r: 2.8, tex: 'jupitermap.jpg', col: 0xffccaa },
+      { name: 'Mars',    x: -12, y: -3, z: -55, r: 0.8, tex: 'marsmap1k.jpg', col: 0xff5522 },
+      { name: 'Venus',   x: 10, y: 2, z: -62, r: 1.1, tex: 'venusmap.jpg', col: 0xffcc88 },
     ];
 
     const travelPlanetMeshes = [];
     PLANET_DEFS.forEach(def => {
       const col = new THREE.Color(def.col);
-      const planetMat = new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: 0.05, roughness: 0.7 });
-      const planet = new THREE.Mesh(new THREE.SphereGeometry(def.r, 24, 24), planetMat);
+      const matOptions = { 
+        color: 0xffffff, 
+        emissive: col, 
+        emissiveIntensity: 0.05, 
+        roughness: 0.8 
+      };
+      
+      if (def.tex) {
+        matOptions.map = texLoader.load(TEX_BASE + def.tex);
+      } else {
+        matOptions.color = col;
+      }
 
-      let glowMat = null;
+      const planetMat = new THREE.MeshStandardMaterial(matOptions);
+      const planet = new THREE.Mesh(new THREE.SphereGeometry(def.r, 32, 32), planetMat);
+
       const grp = new THREE.Group();
       grp.add(planet);
 
+      // Saturn's Rings
+      if (def.hasRings) {
+        const ringGeo = new THREE.TorusGeometry(def.r * 1.8, 0.05, 2, 100);
+        const ringMat = new THREE.MeshStandardMaterial({ color: 0xccbba8, emissive: 0x443322 });
+        const rings = new THREE.Mesh(ringGeo, ringMat);
+        rings.rotation.x = Math.PI / 2.2;
+        rings.scale.y = 0.05; // Make it look like a flat disk
+        grp.add(rings);
+      }
+
+      let glowMat = null;
       if (!def.noCorona) {
         glowMat = new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0, side: THREE.BackSide });
-        const glow = new THREE.Mesh(new THREE.SphereGeometry(def.r * 2.8, 16, 16), glowMat);
+        const glow = new THREE.Mesh(new THREE.SphereGeometry(def.r * 2.5, 16, 16), glowMat);
         grp.add(glow);
       }
 
@@ -805,13 +872,28 @@
     travelGroup.add(new THREE.Points(dustGeo,
       new THREE.PointsMaterial({ color: 0x8899aa, size: 0.07, transparent: true, opacity: 0.5 })));
 
+    // Add Galaxies (Periphery)
+    const galaxies = [
+      { x: -45, y: 15, z: -25, col: 0x66aaff },
+      { x: 48, y: -12, z: -45, col: 0xffaa66 },
+      { x: -40, y: -18, z: -70, col: 0xff88ff },
+      { x: 50, y: 20, z: -90, col: 0x88ffaa },
+    ];
+    const galaxyMeshes = [];
+    galaxies.forEach(g => {
+      const gal = makeGalaxy({ color: g.col, radius: 15 + Math.random() * 10 });
+      gal.position.set(g.x, g.y, g.z);
+      gal.rotation.x = Math.random() * Math.PI;
+      gal.rotation.z = Math.random() * Math.PI;
+      travelGroup.add(gal);
+      galaxyMeshes.push({ mesh: gal });
+    });
+
     /* ─── Scene 6: Earth (textured) ─────────────────────────────────────────── */
     const earthGroup = new THREE.Group();
     scene.add(earthGroup);
     earthGroup.visible = false;
 
-    const texLoader = new THREE.TextureLoader();
-    const TEX_BASE = 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r160/examples/textures/planets/';
 
     const earth = new THREE.Mesh(
       new THREE.SphereGeometry(2.5, 64, 64),
@@ -1375,24 +1457,31 @@
           );
         }
 
-        // Wave-front rings and planets
+        // Shared Wave/Planet update function to be used in Scene 5 and 6
+        updateTravelScene(t, dt, planetReveal, 1.0);
+      }
+
+      function updateTravelScene(t, dt, reveal, fadeOut) {
         const waveFrontZ = camPos.z - 12;
 
         travelPlanetMeshes.forEach(p => {
           const dz = p.worldZ - waveFrontZ;
           const glow = Math.exp(-dz * dz * 0.04);
-          // Only show planets after the star is passed
           if (p.glowMat) {
-            p.glowMat.opacity = glow * 0.6 * planetReveal;
+            p.glowMat.opacity = glow * 0.6 * reveal * fadeOut;
           }
-          p.planetMat.emissiveIntensity = (glow * 1.5 + 0.05) * planetReveal;
+          p.planetMat.emissiveIntensity = (glow * 1.5 + 0.05) * reveal * fadeOut;
         });
 
         travelWaveRings.forEach((ring, i) => {
           ring.position.set(camPos.x, camPos.y, waveFrontZ - i * 7);
-          const pulse = (0.85 + 0.15 * Math.sin(elapsed * 1.8 + i * 1.2)) * planetReveal;
+          const pulse = (0.85 + 0.15 * Math.sin(elapsed * 1.8 + i * 1.2)) * reveal * fadeOut;
           ring.material.opacity = ring.userData.baseOpacity * pulse;
           ring.rotation.z += dt * (0.012 - i * 0.003);
+        });
+
+        galaxyMeshes.forEach(g => {
+          g.mesh.material.opacity = 0.6 * reveal * fadeOut;
         });
       }
 
@@ -1402,6 +1491,13 @@
         earthSunLight.intensity = 1.8;
         const st = (t - 115) / 15;
 
+        // Linger travel scene for 5 seconds to avoid sudden disappearance
+        if (t < 120) {
+          travelGroup.visible = true;
+          const fadeOut = clamp(1 - (t - 115) / 5, 0, 1);
+          updateTravelScene(t, dt, 1.0, fadeOut);
+        }
+
         // Smoothly stop rotation and tilt to target Europe (Germany/Belgium/Netherlands)
         const TARGET_EARTH_ROT = 14.0; // Longitude ~9°E (Germany)
         const TARGET_EARTH_TILT = -1.05; // Latitude hit point ~50°N (Germany)
@@ -1410,7 +1506,8 @@
         earth.rotation.y = lerp(startRot, TARGET_EARTH_ROT, easePhase);
         earth.rotation.x = lerp(0, TARGET_EARTH_TILT, easePhase);
 
-        camPos.set(0, 0, lerp(-55, -10, ease(clamp(st * 1.5, 0, 1))));
+        // Start cam at -65 (Scene 5 end) instead of -55 to avoid jump
+        camPos.set(0, 0, lerp(-65, -10, ease(clamp(st * 1.5, 0, 1))));
         camTarget.set(0, 0, 0);
 
         // Animate GW Rings passing over Earth
